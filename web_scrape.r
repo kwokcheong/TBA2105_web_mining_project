@@ -272,6 +272,7 @@ hotel_master_data = read.csv("hotel_info_list.csv")
 
 user_id_list = unique(user_data$userId_cleaned)
 hotel_id_list = unique(hotel_master_data$hotelId)
+hotel_name_list = unique(hotel_master_data$hotelName)
                   
 # Create matrix user to hotel id with rating all < This will be the first approach 
 mat <- matrix(0,
@@ -281,8 +282,6 @@ mat <- matrix(0,
 colnames(mat) <- hotel_id_list
 rownames(mat) <- user_id_list
 
-test = c(100,200)
-
 for(i in 1:nrow(user_data)){ 
 print(i)
  hotel_index =  which(hotel_id_list == user_data[i,]$hotelId )
@@ -291,17 +290,34 @@ print(i)
 }
 
 mat[mat==0] <- NA
-
+colnames(mat) <- hotel_name_list
 test <- mat[1:5,]
 train <- mat[5:nrow(mat),]
+target <- mat[1:10,]
 
 test <- test %>% as("matrix")  %>% as("realRatingMatrix")
 train <- train %>% as("matrix")  %>% as("realRatingMatrix")
+target <- target %>% as("matrix")  %>% as("realRatingMatrix")
 
 model <- Recommender(train, method = "UBCF")
 
-recommendations <- predict(model, test, type="ratingMatrix")
+recommendations <- predict(model, target, type="ratingMatrix")
 recommendations %>% as("matrix") %>% View()
 
-recommendations <- predict(model, test)
+recommendations <- predict(model, target)
 recommendations %>% as("list") %>% View()
+
+
+model2 <- Recommender(train, method = "IBCF")
+
+recommendations <- predict(model2, target, type="ratingMatrix")
+recommendations %>% as("matrix") %>% View()
+
+recommendations <- predict(model2, target)
+recommendations %>% as("list") %>% View()
+
+
+# Next up : Evaluation 
+
+
+
