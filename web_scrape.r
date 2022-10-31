@@ -9,7 +9,7 @@ library("writexl")
 library(rvest)
 library(recommenderlab)
 library(dplyr)
-#setwd("C:/Users/wongk/Projects/TBA2105_web_mining_project")
+#setwd("~/Desktop/projects/TBA2105_web_mining_project")
 # Initialize an empty data frame
 df_hotel_info <- data.frame(matrix(ncol=10, nrow=0))
 cols <- c('star', 'hotelName','hotelId','location','freeCancelTag', 'favorityCountMsg','score','scoreDescription', 'totalReviews', 'topQuality')
@@ -290,6 +290,8 @@ print(i)
  mat[user_index,hotel_index] <- user_data[i,]$ratingAll
 }
 
+mat[mat==0] <- NA
+
 test <- mat[1:5,]
 train <- mat[5:nrow(mat),]
 
@@ -300,3 +302,6 @@ model <- Recommender(train, method = "UBCF")
 
 recommendations <- predict(model, test, type="ratingMatrix")
 recommendations %>% as("matrix") %>% View()
+
+recommendations <- predict(model, test)
+recommendations %>% as("list") %>% View()
