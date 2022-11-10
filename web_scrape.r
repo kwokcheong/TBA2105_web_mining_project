@@ -302,6 +302,7 @@ test <- mat[1:10,]
 train <- mat[11:nrow(mat),]
 
 # convert to realRatingMatrix format
+mat_data <- mat %>% as("matrix")  %>% as("realRatingMatrix")
 test <- test %>% as("matrix")  %>% as("realRatingMatrix")
 train <- train %>% as("matrix")  %>% as("realRatingMatrix")
 
@@ -317,11 +318,27 @@ model2 <- Recommender(train, method = "IBCF")
 IBCF_recommendations <- predict(model2, test, type="ratingMatrix")
 IBCF_recommendations %>% as("matrix") %>% View()
 
-IBCF_recommendations <- predict(model2, test)
+IBCF_recommendations <- predict(model2, test, n=3)
 IBCF_recommendations %>% as("list") %>% View()
 
 
 # Next up : Evaluation 
+
+#multiple algorithms
+#POPULAR based on item popularity
+scheme = evaluationScheme(mat_data, method="cross-validation",
+                           k=4, given=-1, goodRating=5)
+
+algorithms = list(
+  "user-based CF" = list(name="UBCF"),
+  "item-based CF" = list(name="IBCF")
+)
+
+
+results = evaluate(scheme, method=algorithms, type="topNList", n=c(1,3,5,10,15,20))
+results
+
+plot(results, annotate=T)
 
 
 
