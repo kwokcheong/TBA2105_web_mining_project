@@ -290,31 +290,35 @@ print(i)
 }
 
 mat[mat==0] <- NA
-colnames(mat) <- hotel_name_list
-test <- mat[1:5,]
-train <- mat[5:nrow(mat),]
-target <- mat[1:10,]
 
+
+# Shuffle the matrix
+set.seed(41)
+shuffle <- sample(nrow(mat))
+mat <- mat[shuffle,]
+colnames(mat) <- hotel_name_list
+
+test <- mat[1:10,]
+train <- mat[11:nrow(mat),]
+
+# convert to realRatingMatrix format
 test <- test %>% as("matrix")  %>% as("realRatingMatrix")
 train <- train %>% as("matrix")  %>% as("realRatingMatrix")
-target <- target %>% as("matrix")  %>% as("realRatingMatrix")
 
 model <- Recommender(train, method = "UBCF")
+UBCF_recommendations <- predict(model, test, type="ratingMatrix")
+UBCF_recommendations %>% as("matrix") %>% View()
 
-recommendations <- predict(model, target, type="ratingMatrix")
-recommendations %>% as("matrix") %>% View()
-
-recommendations <- predict(model, target)
-recommendations %>% as("list") %>% View()
+UBCF_recommendations <- predict(model, test)
+UBCF_recommendations %>% as("list") %>% View()
 
 
 model2 <- Recommender(train, method = "IBCF")
+IBCF_recommendations <- predict(model2, test, type="ratingMatrix")
+IBCF_recommendations %>% as("matrix") %>% View()
 
-recommendations <- predict(model2, target, type="ratingMatrix")
-recommendations %>% as("matrix") %>% View()
-
-recommendations <- predict(model2, target)
-recommendations %>% as("list") %>% View()
+IBCF_recommendations <- predict(model2, test)
+IBCF_recommendations %>% as("list") %>% View()
 
 
 # Next up : Evaluation 
