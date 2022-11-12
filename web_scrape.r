@@ -265,15 +265,6 @@ for(j in 1:40){
   user_review_data <- rbind(user_review_data, df)
 }
 
-
-# Read csv 
-user_data = read.csv("workfile_user_review_data.csv")
-hotel_master_data = read.csv("hotel_info_list.csv")
-
-user_id_list = unique(user_data$userId_cleaned)
-hotel_id_list = unique(hotel_master_data$hotelId)
-hotel_name_list = unique(hotel_master_data$hotelName)
-
 # Cleaning hotel master data 
 # Remove duplicated hotels
 
@@ -283,7 +274,14 @@ length(unique(hotel_master_data$hotelId))
 hotel_master_data_cleaned <- hotel_master_data[!duplicated(hotel_master_data$hotelId), ]
 write.csv(hotel_master_data_cleaned,"hotel_master_data_cleaned.csv", row.names = FALSE)
 
+# Read csv 
+user_data = read.csv("workfile_user_review_data.csv")
 hotel_master_data = read.csv("hotel_master_data_cleaned.csv")
+
+user_id_list = unique(user_data$userId_cleaned)
+hotel_id_list = unique(hotel_master_data$hotelId)
+hotel_name_list = unique(hotel_master_data$hotelName)
+
 
 # Create matrix user to hotel id with rating all < This will be the first approach 
 mat <- matrix(0,
@@ -303,27 +301,57 @@ print(i)
 mat[mat==0] <- NA
 
 
+# Create another matrix but this time with reduced dimensions, we will reduce the number of users. 
+no_of_NAs <- rowSums(is.na(mat))
+no_of_Reviews <- 203 - rowSums(is.na(mat))
+no_of_Reviews <- as.data.frame(no_of_Reviews)
+
+# if we go for >2 there will be 932 records , >3 = 446, >4 = 257 , > 5 = 151
+length(no_of_Reviews[no_of_Reviews$no_of_Reviews > 3,]) # 151
+
+no_of_Reviews_vector <- as.vector(no_of_Reviews)
+no_of_Reviews_vector <- no_of_Reviews_vector$no_of_Reviews
+no_of_Reviews_vector <- no_of_Reviews_vector > 3
+
+mat_reduced <- mat[no_of_Reviews_vector,]
+nrow(mat_reduced)
+
 # Shuffle the matrix
 set.seed(41)
 shuffle <- sample(nrow(mat))
+shuffle2 <- sample(nrow(mat_reduced))
 mat <- mat[shuffle,]
+mat_reduced <- mat_reduced[shuffle2, ]
 colnames(mat) <- hotel_name_list
+colnames(mat_reduced) <- hotel_name_list
+
+# for mat reduced, we can futher reduce by removing hotels with no ratings
+ncol(mat_reduced)
+mat_reduced <- mat_reduced[ , -which( colSums(is.na(mat_reduced)) == nrow(mat_reduced)) ]
+ncol(mat_reduced) # 189 hotels left 
 
 # Explore Dimensional Reduction using SVD
 
 test <- mat[1:10,]
 train <- mat[11:nrow(mat),]
 
+test2 <- mat_reduced[1:10,]
+train2 <- mat_reduced[11:nrow(mat_reduced),]
+
 # convert to realRatingMatrix format
 mat_data <- mat %>% as("matrix")  %>% as("realRatingMatrix")
 test <- test %>% as("matrix")  %>% as("realRatingMatrix")
 train <- train %>% as("matrix")  %>% as("realRatingMatrix")
 
-model <- Recommender(train, method = "UBCF")
-UBCF_recommendations <- predict(model, test, type="ratingMatrix")
+mat_reduced_data <- mat_reduced %>% as("matrix")  %>% as("realRatingMatrix")
+test2 <- test2 %>% as("matrix")  %>% as("realRatingMatrix")
+train2 <- train2 %>% as("matrix")  %>% as("realRatingMatrix")
+
+model <- Recommender(train2, method = "UBCF")
+UBCF_recommendations <- predict(model, test2, type="ratingMatrix")
 UBCF_recommendations %>% as("matrix") %>% View()
 
-UBCF_recommendations <- predict(model, test)
+UBCF_recommendations <- predict(model, test2)
 UBCF_recommendations %>% as("list")
 
 
@@ -346,22 +374,20 @@ SVD_recommendations %>% as("list")
 
 #multiple algorithms
 #POPULAR based on item popularity
-scheme = evaluationScheme(mat_data, method="cross-validation",k=4, given=1, goodRating=5)
+scheme = evaluationScheme(mat_reduced_data, method="cross-validation",k=4, given=-1, goodRating=5)
 
 algorithms = list(
   "popular items" = list(name="POPULAR"),
   "svd" = list(name="SVD"),
-  "user-based CF" = list(name="UBCF"),
   "item-based CF" = list(name="IBCF")
 )
 
 
 results = evaluate(scheme, method=algorithms, type="topNList", n=c(1,3,5,10,15,20))
-results
 
 plot(results, annotate=T)
 
-ev = evaluationScheme(mat_data, method="split",train=0.9, given=1, goodRating=5)
+ev = evaluationScheme(mat_reduced_data, method="split",train=0.9, given=-1, goodRating=5)
 
 r1 = Recommender(getData(ev, "train"), method = "SVD")
 r2 = Recommender(getData(ev, "train"), method = "IBCF")
@@ -377,7 +403,7 @@ error = rbind(
 )
 error
 
-scheme1 = evaluationScheme(mat_data, method="cross-validation", k=4, given=1, goodRating=5)
+scheme1 = evaluationScheme(mat_reduced_data, method="cross-validation", k=4, given=-1, goodRating=5)
 results1 = evaluate(scheme1, method="IBCF", type="topNList", n=c(1,3,5,10,15,20))
 #generate the confusion matrix
 getConfusionMatrix(results1)[[1]]
