@@ -1,0 +1,1251 @@
+---
+title: "Hotel Recommender Analysis Report"
+
+author: 
+- Chia Yue Zhu Ameline, (A0211277L)
+- Kho Bee Yen Kris, (A0177966E)
+- Liu Meng Chuan, (A0211313A)
+- Wong Kwok Cheong, (A0211279H)
+
+date: "13 Nov, 2022"
+
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### INTRODUCTION
+
+Over the years, staycations have been growing in popularity among Singaporeans. With all the information and data present on booking platforms, analytics can be used as a key tool to attain analytical insights and make new data-driven discoveries. Hence for this project, we have explored and extracted data from an online traveling platform, Trip.com. From this, our analysis have uncover insights such as 
+
+1. Hotel attributes that attracts booking
+2. Driving factors determining hotel prices
+3. Guest type and their booking behavior
+
+In addition to our analysis, we also explored the idea of recommending and suggesting suitable hotels to guests based on booking behaviors. With our analysis and analytical models, we hope to understand the hotel industry better and propose solutions to increase productivity, efficiency, and profitability for businesses.
+
+### BUSINESS DOMAIN AND DATA
+
+Trip.com is an international online traveling platform that provides booking services for flights, hotels, trains, car rentals, airport transfers, and tours and attraction tickets globally. The site offers more than 1.2 million hotels in 200 countries and regions, as well as over 2 million flight routes connecting more than 5,000 cities. Thus, Trip.com contains a wide range of data related to various sub industry within the hospitality industry. As part of the project, we will be focusing our analysis on hotels within Singapore. With more than 500 hotels in Singapore, we have managed to mined more than 200 unique hotels and its relevant data. The data collected are: 
+
+<details>
+
+<summary>Hotel Information Data</summary>
+
+This dataset contains general information related to all 203 mined hotels in Singapore. It includes columns such as: 
+
+* **star:**  An indicator that denotes the hotel's quality, cleanliness and standards. Eg: 1 star, 2 star, 3 star, 4 star, and 5 star (Numeric value)
+
+* **hotelName:**  The name of the hotel (Character value)
+
+* **hotelId:**  The ID that uniquely identify the hotel within Trip.com (Numeric value)
+
+* **location:**  The location where the hotel is located at (Character value)
+
+* **freeCancelTag:**  An indicator that denotes if the hotel provides free cancellation policies. Eg. "Free Cancellation" or "NA" (Character value)
+
+* **favorityCountMsg:**  The count of guests who favorites or saves the hotel (Character value)
+
+* **score:**  Similar to Hotel Star Rating, its a more precise indicator that denotes the hotel's quality, cleanliness and standards (Numeric value)
+
+* **scoreDescription:**  A descriptive term that describe the Hotel Score Rating (Character value). The breakdown of the term is: 
+  + score < 4: ""
+  + score >= 4 and score <= 4.2: "Very Good"
+  + score >= 4.3 and score <= 4.5: "Excellent"
+  + score >= 4.6 and score <= 4.8: "Outstanding"
+  + score >= 4.9: "Perfect"
+
+* **totalReviews**  Total number of reviews given to the hotel (Character value)
+
+</details>
+
+<details>
+
+<summary>Hotel Amenities Data</summary>
+
+This dataset contains hotel amenities information related to all 203 mined hotels in Singapore. It includes columns such as: 
+
+* **HotelURL:**  The relevant URL of each hotel within Trip.com (Character value)
+
+* **HotelID:**  The ID that uniquely identify the hotel within Trip.com (Numeric value)
+
+* **HotelNames:**  The name of the hotel (Character value)
+
+The remaining columns indicate boolean values of amenities, services, or facilities the hotel have 
+
+</details>
+
+<details>
+
+<summary>Hotel Price Data</summary>
+
+This dataset contains price information related to all 203 mined hotels in Singapore. It includes columns such as: 
+
+* **hotelId:**  The ID that uniquely identify the hotel within Trip.com (Numeric value)
+
+* **hotelName:**  The name of the hotel (Character value)
+
+* **pricePerNight:** Since there are multiple room types in a hotel, we have decided to take the cheapest room price. So this column will contain the hotel price of their cheapest room for a night's stay (Numeric value)
+
+* **checkInDate:**  The check-in date of the mined price. We have mined a total of 365 nights for each hotel (Character value)
+
+* **checkOutDate:**  The check-out date of the mined price. We have mined a total of 365 nights for each hotel (Character value)
+
+</details>
+
+<details>
+
+<summary>Surrounding Places Of Interest Per Hotel Data</summary>
+
+This dataset contains places of interest surrounding each hotel of all 203 mined hotels in Singapore. It includes columns such as: 
+
+* **distance:**  The distance of the place of interest from the hotel (Character value)
+
+* **placeName:**  The name of the place of interest (Character value)
+
+* **distanceNumbert:**  Similar to the distance column, its a more precise distance (calculated in meters) of the place of interest from the hotel (Numeric value)
+
+* **hotelId:**  The ID that uniquely identify the hotel within Trip.com (Numeric value)
+
+</details>
+
+<details>
+
+<summary>User Review Data</summary>
+
+This dataset contains user review of all 203 mined hotels in Singapore if there is. It includes columns such as: 
+
+* **hotelId:**  The ID that uniquely identify the hotel within Trip.com (Numeric value)
+
+* **userId:**  The ID that uniquely identify the user who stayed in the hotel booked from Trip.com and wrote a review of it (Character value)
+
+* **userId_cleaned:**  Similar to the user ID, it is a cleaned user ID  that uniquely identify the user who stayed in the hotel booked from Trip.com and wrote a review of it (Character value)
+
+* **nickname:**  The name of the user (Character value)
+
+* **checkInDate:**  The check-in date of the user (Character value)
+
+* **content:**  The review written by the user (Character value)
+
+* **travelType:**  The ID that uniquely identify the travel type of the users (Numeric value)
+
+* **travelTypeText:**  A descriptive term that describe the travel type of the users (Character value). The breakdown of the term is: 
+  + travel type = 0: "Other"
+  + travel type = 10: "Business travellers"
+  + travel type = 30: "Family"
+  + travel type = 40: "Friends"
+  + travel type = 50: "Solo travellers"
+  + travel type = 60: "Booked for others"
+  + travel type = 70: "Couples"
+
+* **ratingAll:**  The overall rating given by the user for the hotel (Numeric value)
+
+* **ratingLocation:**  The location rating given by the user for the hotel (Numeric value)
+
+* **ratingFacility:**  The facility rating given by the user for the hotel (Numeric value)
+
+* **ratingService:**  The service rating given by the user for the hotel (Numeric value)
+
+* **ratingRoom:**  The room rating given by the user for the hotel (Numeric value)
+
+* **commentLevel:**  A descriptive term that describe the overall rating given by the user for the hotel (Character value)
+  + ratingAll < 4.5: ""
+  + ratingAll = 4.5: "Good"
+  + ratingAll = 4.7: "Outstanding"
+  + ratingAll = 5: "Perfect"
+
+</details>
+
+
+### ANALYSIS PROCESS
+
+After determining the choice of topic, we make use of the CRISP-DM framework to plan and guide the process of our project. Below are the steps we took for this project: 
+
+<details>
+
+<summary>STEP 01: Business Understanding</summary>
+As part of the business understanding phase, we dive into understanding what the business requires. To simplify the thinking process, we looked from an angle of a user by coming up with problems we faced as users while booking hotels in Singapore. Following that, we concluded that it is difficult to determine the best price of a hotel given that room prices fluctuates on a day to day basis. Consequently, "average" priced hotels tend to lose out to cheaper hotels as users will look for cheaper hotel alternatives. Thus, we made this issue our problem statement and we will like to figure solutions that could potentially help users and hotel businesses. After defining our problem statement, we started to look into the various types of analysis we will be doing. By sketching out visualization graphs and modelings ideas, we managed to understand the sort of data we will be requiring to execute our plan. 
+
+</details>
+
+<details>
+
+<summary>STEP 02: Data Understanding</summary>
+Once we have a clear picture of what data we need, we created a documentation to understand the various field attributes to mine. Then we cluster relevant attributes together and document them into a table. By forming relationship between data, we managed to understand the types of field we are working with and how we can group similar data together to create our data frames. Once we have completed the data planning phase, we started the mining process. After mining data off Trip.com, we managed to populate all 5 data that are mentioned above. However, the data collected are not in good quality. Hence, we proceeded with the data preparation phase.
+
+</details>
+
+<details>
+
+<summary>STEP 03: Data Preparation</summary>
+As part of the data preparation phase, we started to clean the data by removing irrelevant values and cross checking the classes of each data column. By correcting, imputing, and removing erroneous values, we avoided the mistake of "garbage-in, garbage-out" analysis. In addition, we manipulated the mined data and constructed new columns that will assist with our analysis. Since our data was mined with respect to our documentation, we had to integrate tables together by combining 2 data frames into 1. By doing so, we have a more holistic data to work with for our analysis.
+
+</details>
+
+<details>
+
+<summary>STEP 04: Modeling</summary>
+After ensuring that our data are cleaned and proper, we started to build the various visualization and models we had plan during the business understanding phase. While we build the models, we evaluated and test the accuracy of our models by splitting the data into training, test, and validation sets so as to test the ability of the model to predict base on different data types 
+
+</details>
+
+<details>
+
+<summary>STEP 05: Analysis/Evaluation</summary>
+Lastly, we evaluated the model and determined if the insights generated from the model meets the business. Based on that, we can draw conclusive insights that we can assess then propose solutions to increase productivity, efficiency, and profitability for businesses.
+
+</details>
+
+
+### DATA COLLECTION
+
+For the mining process, we attempted 2 different methods of retrieving data from Trip.com. The methods are: 
+
+<details>
+
+<summary>API</summary>
+Mining using API is a relatively straightforward and fast approach of attaining data directly from the data source. Based on the transaction records that are stored in the system, we can instantly get loads of data by accessing the POST method then tapping into the return responses. Even though API is a convenient method to mine data, not all API are useful in providing us with relevant data. Thus, we had to determine the right API to tab into so that we can retrieve data that will be useful for our analysis. To determine the right API, we individually assess the inspect network activities and check if each response contains relevant data that we can use. Once we have determine that, we ran the API's curl command of the request to check if the client server return the expected data. As each API call is unique to its respective hotels, we gathered a list of hotel Ids and iteratively call the APIs. Using this method, we have mined the following set of data: 
+
+1. Hotel Information Data
+2. Hotel Price Data
+3. Surrounding Places Of Interest Per Hotel Data
+4. User Review Data
+
+The codes are shown below: 
+
+* **Mining code for Hotel Information Data** 
+
+```{r warning = FALSE, message = FALSE}
+library(ggplot2)
+library(httr)
+library(htm2txt)
+library(jsonlite)
+library(stringr)
+library(tidyr)
+library(writexl)
+library(rvest)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(readxl)
+library(stringr)
+library(httr)
+library(rvest)
+library(tm)
+library(wordcloud)
+library(RColorBrewer)
+
+# Initialize an empty data frame
+df_hotel_info <- data.frame(matrix(ncol=10, nrow=0))
+cols <- c('star', 'hotelName','hotelId','location','freeCancelTag', 'favorityCountMsg','score','scoreDescription', 'totalReviews', 'topQuality')
+colnames(df_hotel_info) <- cols
+
+# Manually retrieve a list of hotel IDs and created a vector hotelIds
+hotel_info_df <- read_excel("trip_com_HOTEL_ID.xlsx")
+hotelIds <- as.vector(hotel_info_df$HOTEL_ID)
+
+# New hotel ids -> MANAULLY factor in more locations
+hotelIds2 <- c(712600, 56704737,7982267,996309, 687490)
+head(hotelIds)
+```
+
+
+```{r eval=FALSE}
+# API call function to get the data from individual hotels (2022-10-26 to 2022-10-27)
+apiCallNearbyHotel <- function(masterHotelId){
+  res = POST(
+    "https://sg.trip.com/restapi/soa2/16708/json/hotelSearchNearby?x-traceID=1658849562341.1pmnm5-1666016479066-1666203502",
+    add_headers('authority = sg.trip.com'),
+    add_headers('accept = application/json'),
+    add_headers('accept-language = en-US,en;q=0.9'),
+    add_headers('content-type = application/json;charset=UTF-8'),
+    add_headers('cookie = ibu_home_language_match_union_flag=0; _abtest_userid=fb70a796-d789-4b0b-80d8-afdd54b85933; _gcl_au=1.1.562621262.1658849563; _RGUID=751c843f-5682-48a5-a9ff-1e84de692fb8; _RDG=281a5c31eaa24722803983fe33c78ee19f; _RSG=bYaWMz3XSK7u.IQUJe7_dA; _bfaStatusPVSend=1; ibu_online_home_language_match={"isFromTWNotZh" =false,"isFromIPRedirect" =false,"isFromLastVisited" =true,"isRedirect" =false,"isShowSuggestion" =false,"lastVisited" ="https =//sg.trip.com?locale=en-sg"}; cookiePricesDisplayed=SGD; _tp_search_latest_channel_name=hotels; _gid=GA1.2.1760276045.1663081390; _RF1=137.132.215.24; g_state={"i_p" =1663088594680,"i_l" =1}; ibu_h5_site=SG; ibu_h5_group=trip; ibu_h5_local=en-sg; ibu_h5_lang=ensg; ibu_h5_curr=SGD; IBU_TRANCE_LOG_URL=%2Fhotels%2Fsingapore-hotel-detail-996041%2Fparkroyal-on-beach-road-singapore%2F; librauuid=; _clck=5quac4|1|f4u|0; IBU_TRANCE_LOG_P=37682130973; hotel_h5_view_ids=%5B%22996041%22%5D; IBU_showtotalamt=1; ibu-h5-pop-hotel=0; ibu_online_permission_cls_ct=2; ibu_online_permission_cls_gap=1663082802191; hotelhst=1164390341; ibulanguage=SG; ibulocale=en_sg; intl_ht1=h4%3D73_687472%2C73_909897%2C73_994990%2C73_996041; _bfa=1.1658849562341.1pmnm5.1.1658849562341.1663083559409.2.32.10320668588; _bfs=1.18; _ubtstatus=%7B%22vid%22%3A%221658849562341.1pmnm5%22%2C%22sid%22%3A2%2C%22pvid%22%3A32%2C%22pid%22%3A10320668147%7D; hotel=687472; _ga=GA1.2.523270998.1658849562; _uetsid=505649c0337611ed8b2fb3e69a5735ed; _uetvid=3d45d8900cf811edadcee3300718def6; _clsk=kgr7wv|1663083673350|9|0|l.clarity.ms/collect; _bfi=p1%3D10320668147%26p2%3D10320668147%26v1%3D32%26v2%3D31; _bfaStatus=success; _ga_X437DZ73MR=GS1.1.1663081390.3.1.1663083757.0.0.0'),
+    add_headers('dnt = 1'),
+    add_headers('origin = https =//sg.trip.com'),
+    add_headers('p = 37682130973'),
+    add_headers('referer = https =//sg.trip.com/hotels/w/detail?hotelid=687472&curr=SGD&locale=en-SG&checkin=2022-09-28&checkout=2022-09-29&hoteluniquekey=H4sIAAAAAAAAAOPqY-HilWA0-A8DjEJMHIxSP5g5fr_dt5rF4regIwMIbJnl4Alm5Mx3COApBDN_tDg0Mgpn-zx-dK7RYRJjLyNn_6GvGjGvGxwEwYzDNQ5KzhzdL5byC4hLbHj3SFWBUROm0RDGsChz1HWWeQ0ywhPGCGLleJApwRLFxrF3jpsEh5IOx_01CwQFtCTOP76npcAKMcQhBGoIkGFxkg-o5yYPUA-DExvHv2XMEiwzGD_80tzICFbyoMhhByPTCcabTAuYLkybwLiLCaroEBMrxy19CZZTQPoJUPslJoZbTAyPmCAOeMXE8IkJ6ohfMC1NzBClXcwMk5ghumcxQ9QvYmY4xQIRusQymTG6Wik7tVLJykRHqSSzJCdVyUopzDFESUcpMTe_NK8EyDUy0TM0BQqUJFZ4poAVJifmJJfmJJakhlQWADWY1epgGhKcWlSWmZyqkJaaimyYsZmepSHCMHMshsXeYmF4xMIUHfuJheEXC8TRTawMXawMk1jZOObtZZJgEWIFR7yUgrGJZVJqmoG5hVFKskmieZKlZYpJUqKJUVKyqYmJoamZAp_G4sNNM9mMWLsYmYLdrZilGN08GIPYTC0MzV1comS4mIPdXQRXn78a9ua8sIMUiKcI4yWxpubpBrtnXOMqYOxi5BBg9GCMYKxgXMXIsIGR8QQj4yVGDmdH3wBHT3e_R4y8Hv4hrj7x7o4-Pq5Bka8YQSYBAAQ5MOS3AgAA'),
+    add_headers('sec-ch-ua = "Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"'),
+    add_headers('sec-ch-ua-mobile = ?1'),
+    add_headers('sec-ch-ua-platform = "Android"'),
+    add_headers('sec-fetch-dest = empty'),
+    add_headers('sec-fetch-mode = cors'),
+    add_headers('sec-fetch-site = same-origin'),
+    add_headers('user-agent = Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Mobile Safari/537.36'),
+    body = sprintf('{"searchCondition":{"masterHotelId":%d,"adult":1,"child":0,"age":"","priceType":1,"priceTypes":"1","cityId":73,"checkIn":"2022-10-26","checkOut":"2022-10-27","roomNum":1,"isBusiness":0},"filterCondition":{},"mapType":null,"isNewMapType":"1","Head":{"Locale":"en-SG","Currency":"SGD","AID":"30074","SID":"1622045","ClientID":"1658849562341.1pmnm5","OUID":"ctag.hash.463e4d8ff02f","CAID":"30074","CSID":"1622045","COUID":"ctag.hash.463e4d8ff02f","TimeZone":"8","PageID":"10320668577","HotelExtension":{"WebpSupport":true,"Qid":201198490140,"hasAidInUrl":false,"group":"TRIP","PID":"1e97f1cd-b771-44f3-9290-d98333b53452"},"Frontend":{"vid":"1658849562341.1pmnm5","sessionID":"9","pvid":"74"},"P":"91033365022","Device":"WAP","Version":"0"}}', as.integer(masterHotelId)),
+    encode = "json",
+    verbose()
+    )
+  data <- fromJSON(rawToChar(res$content))
+  data <- data$Response$hotelList
+  data <- removeData(data)
+  data <- unnest(as.data.frame(data), cols = c(base, position, encourage, comment))
+  return(data)
+}
+
+# API call function to get the data from individual hotels (2022-10-23 to 2022-10-24)
+apiCallNearbyHotel_checkin <- function(masterHotelId){
+  res = POST(
+    "https://sg.trip.com/restapi/soa2/16708/json/hotelSearchNearby?x-traceID=1658849562341.1pmnm5-1666016479066-1666203502",
+    add_headers('authority = sg.trip.com'),
+    add_headers('accept = application/json'),
+    add_headers('accept-language = en-US,en;q=0.9'),
+    add_headers('content-type = application/json;charset=UTF-8'),
+    add_headers('cookie = ibu_home_language_match_union_flag=0; _abtest_userid=fb70a796-d789-4b0b-80d8-afdd54b85933; _gcl_au=1.1.562621262.1658849563; _RGUID=751c843f-5682-48a5-a9ff-1e84de692fb8; _RDG=281a5c31eaa24722803983fe33c78ee19f; _RSG=bYaWMz3XSK7u.IQUJe7_dA; _bfaStatusPVSend=1; ibu_online_home_language_match={"isFromTWNotZh" =false,"isFromIPRedirect" =false,"isFromLastVisited" =true,"isRedirect" =false,"isShowSuggestion" =false,"lastVisited" ="https =//sg.trip.com?locale=en-sg"}; cookiePricesDisplayed=SGD; _tp_search_latest_channel_name=hotels; _gid=GA1.2.1760276045.1663081390; _RF1=137.132.215.24; g_state={"i_p" =1663088594680,"i_l" =1}; ibu_h5_site=SG; ibu_h5_group=trip; ibu_h5_local=en-sg; ibu_h5_lang=ensg; ibu_h5_curr=SGD; IBU_TRANCE_LOG_URL=%2Fhotels%2Fsingapore-hotel-detail-996041%2Fparkroyal-on-beach-road-singapore%2F; librauuid=; _clck=5quac4|1|f4u|0; IBU_TRANCE_LOG_P=37682130973; hotel_h5_view_ids=%5B%22996041%22%5D; IBU_showtotalamt=1; ibu-h5-pop-hotel=0; ibu_online_permission_cls_ct=2; ibu_online_permission_cls_gap=1663082802191; hotelhst=1164390341; ibulanguage=SG; ibulocale=en_sg; intl_ht1=h4%3D73_687472%2C73_909897%2C73_994990%2C73_996041; _bfa=1.1658849562341.1pmnm5.1.1658849562341.1663083559409.2.32.10320668588; _bfs=1.18; _ubtstatus=%7B%22vid%22%3A%221658849562341.1pmnm5%22%2C%22sid%22%3A2%2C%22pvid%22%3A32%2C%22pid%22%3A10320668147%7D; hotel=687472; _ga=GA1.2.523270998.1658849562; _uetsid=505649c0337611ed8b2fb3e69a5735ed; _uetvid=3d45d8900cf811edadcee3300718def6; _clsk=kgr7wv|1663083673350|9|0|l.clarity.ms/collect; _bfi=p1%3D10320668147%26p2%3D10320668147%26v1%3D32%26v2%3D31; _bfaStatus=success; _ga_X437DZ73MR=GS1.1.1663081390.3.1.1663083757.0.0.0'),
+    add_headers('dnt = 1'),
+    add_headers('origin = https =//sg.trip.com'),
+    add_headers('p = 37682130973'),
+    add_headers('referer = https =//sg.trip.com/hotels/w/detail?hotelid=687472&curr=SGD&locale=en-SG&checkin=2022-09-28&checkout=2022-09-29&hoteluniquekey=H4sIAAAAAAAAAOPqY-HilWA0-A8DjEJMHIxSP5g5fr_dt5rF4regIwMIbJnl4Alm5Mx3COApBDN_tDg0Mgpn-zx-dK7RYRJjLyNn_6GvGjGvGxwEwYzDNQ5KzhzdL5byC4hLbHj3SFWBUROm0RDGsChz1HWWeQ0ywhPGCGLleJApwRLFxrF3jpsEh5IOx_01CwQFtCTOP76npcAKMcQhBGoIkGFxkg-o5yYPUA-DExvHv2XMEiwzGD_80tzICFbyoMhhByPTCcabTAuYLkybwLiLCaroEBMrxy19CZZTQPoJUPslJoZbTAyPmCAOeMXE8IkJ6ohfMC1NzBClXcwMk5ghumcxQ9QvYmY4xQIRusQymTG6Wik7tVLJykRHqSSzJCdVyUopzDFESUcpMTe_NK8EyDUy0TM0BQqUJFZ4poAVJifmJJfmJJakhlQWADWY1epgGhKcWlSWmZyqkJaaimyYsZmepSHCMHMshsXeYmF4xMIUHfuJheEXC8TRTawMXawMk1jZOObtZZJgEWIFR7yUgrGJZVJqmoG5hVFKskmieZKlZYpJUqKJUVKyqYmJoamZAp_G4sNNM9mMWLsYmYLdrZilGN08GIPYTC0MzV1comS4mIPdXQRXn78a9ua8sIMUiKcI4yWxpubpBrtnXOMqYOxi5BBg9GCMYKxgXMXIsIGR8QQj4yVGDmdH3wBHT3e_R4y8Hv4hrj7x7o4-Pq5Bka8YQSYBAAQ5MOS3AgAA'),
+    add_headers('sec-ch-ua = "Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"'),
+    add_headers('sec-ch-ua-mobile = ?1'),
+    add_headers('sec-ch-ua-platform = "Android"'),
+    add_headers('sec-fetch-dest = empty'),
+    add_headers('sec-fetch-mode = cors'),
+    add_headers('sec-fetch-site = same-origin'),
+    add_headers('user-agent = Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Mobile Safari/537.36'),
+    body = sprintf('{"searchCondition":{"masterHotelId":%d,"adult":1,"child":0,"age":"","priceType":1,"priceTypes":"1","cityId":73,"checkIn":"2022-10-23","checkOut":"2022-10-24","roomNum":1,"isBusiness":0},"filterCondition":{},"mapType":null,"isNewMapType":"1","Head":{"Locale":"en-SG","Currency":"SGD","AID":"30074","SID":"1622045","ClientID":"1658849562341.1pmnm5","OUID":"ctag.hash.463e4d8ff02f","CAID":"30074","CSID":"1622045","COUID":"ctag.hash.463e4d8ff02f","TimeZone":"8","PageID":"10320668577","HotelExtension":{"WebpSupport":true,"Qid":201198490140,"hasAidInUrl":false,"group":"TRIP","PID":"1e97f1cd-b771-44f3-9290-d98333b53452"},"Frontend":{"vid":"1658849562341.1pmnm5","sessionID":"9","pvid":"74"},"P":"91033365022","Device":"WAP","Version":"0"}}', as.integer(masterHotelId)),
+    encode = "json",
+    verbose()
+  )
+  data <- fromJSON(rawToChar(res$content))
+  data <- data$Response$hotelList
+  data <- removeData(data)
+  data <- unnest(as.data.frame(data), cols = c(base, position, encourage, comment))
+  return(data)
+}
+
+# This function helps to remove the unused data
+removeData <- function(data){
+  data$base$picture = NULL
+  data$base$starType = NULL
+  data$base$badge = NULL
+  data$base$hotelUniqueKey = NULL
+  data$base$isFavoriteHotel = NULL
+  data$money = NULL
+  data$position$cityId = NULL
+  data$position$cityName = NULL
+  data$position$distance = NULL
+  data$position$lat = NULL
+  data$position$lng = NULL
+  data$position$regionType = NULL
+  data$position$countryId = NULL
+  data$encourage$roomHoldMessage = NULL
+  data$encourage$freeBreakfastLabel = NULL
+  data$encourage$childrenFreeTag = NULL
+  data$encourage$loginGuide = NULL
+  data$comment$scoreMax = NULL
+  data$seoInfo = NULL
+  return(data)
+}
+
+# adds column if does not exist
+add_cols <- function(df, cols) {
+  add <- cols[!cols %in% names(df)]
+  if(length(add) != 0) df[add] <- NA
+  return(df)
+}
+
+# Looping through the hotel ID from the excel
+for(i in hotelIds){
+  data <- apiCallNearbyHotel(i)
+  data <- add_cols(data, cols)
+  df_hotel_info <- rbind(df_hotel_info, as.data.frame(data))
+  df_hotel_info <- unique(df_hotel_info)
+}
+
+# manual list - some hotels were left out likely due to check in checkout date unavailability! Solution is to manually search
+for(i in hotelIds2){
+  data <- apiCallNearbyHotel_checkin(i)
+  data <- add_cols(data, cols)
+  df_hotel_info <- rbind(df_hotel_info, as.data.frame(data))
+  df_hotel_info <- unique(df_hotel_info)
+}
+
+# Checkpoint - write.csv
+df_hotel_info_csv <- subset(df_hotel_info, select = -c(topQuality))
+
+# Export as csv
+write.csv(df_hotel_info_csv,"hotel_info_list.csv", row.names = FALSE)
+```
+
+
+* **Mining code for Hotel Price Data** 
+
+```{r eval=FALSE}
+# Initialize an empty data frame
+df_hotel_prices <- data.frame(matrix(ncol=5, nrow=0))
+cols <- c('hotelId', 'hotelName' ,'pricePerNight','checkInDate', 'checkOutDate')
+colnames(df_hotel_prices) <- cols
+hotel_info_list <- read.csv("hotel_info_list.csv")
+hotel_id <- unique(hotel_info_list$hotelId)
+
+# Manually documenting the dates that I will be checking
+check_in_date <- c(2022-10-26,2022-10-27,2022-10-28,2022-10-29,2022-10-30,2022-10-31, 
+                 2022-11-01,2022-11-02,2022-11-03,2022-11-04,2022-11-05,2022-11-06,2022-11-07,2022-11-08,
+                 2022-11-09,2022-11-10,2022-11-11,2022-11-12,2022-11-13,2022-11-14,2022-11-15,2022-11-16,
+                 2022-11-17,2022-11-18,2022-11-19,2022-11-20,2022-11-21,2022-11-22,2022-11-23,2022-11-24,
+                 2022-11-25,2022-11-26,2022-11-27,2022-11-28,2022-11-29,2022-11-30,2022-12-01,2022-12-02,
+                 2022-12-03,2022-12-04,2022-12-05,2022-12-06,2022-12-07,2022-12-08,2022-12-09,2022-12-10,
+                 2022-12-11,2022-12-12,2022-12-13,2022-12-14,2022-12-15,2022-12-16,2022-12-17,2022-12-18,
+                 2022-12-19,2022-12-20,2022-12-21,2022-12-22,2022-12-23,2022-12-24,2022-12-25,2022-12-26,
+                 2022-12-27,2022-12-28,2022-12-29,2022-12-30,2022-12-31,2023-01-01,2023-01-02,2023-01-03,
+                 2023-01-04,2023-01-05,2023-01-06,2023-01-07,2023-01-08,2023-01-09,2023-01-10,2023-01-11,
+                 2023-01-12,2023-01-13,2023-01-14,2023-01-15,2023-01-16,2023-01-17,2023-01-18,2023-01-19,
+                 2023-01-20,2023-01-21,2023-01-22,2023-01-23,2023-01-24,2023-01-25,2023-01-26,2023-01-27,
+                 2023-01-28,2023-01-29,2023-01-30,2023-01-31,2023-02-01,2023-02-02,2023-02-03,2023-02-04,
+                 2023-02-05,2023-02-06,2023-02-07,2023-02-08,2023-02-09,2023-02-10,2023-02-11,2023-02-12,
+                 2023-02-13,2023-02-14,2023-02-15,2023-02-16,2023-02-17,2023-02-18,2023-02-19,2023-02-20,
+                 2023-02-21,2023-02-22,2023-02-23,2023-02-24,2023-02-25,2023-02-26,2023-02-27,2023-02-28,
+                 2023-03-01,2023-03-02,2023-03-03,2023-03-04,2023-03-05,2023-03-06,2023-03-07,2023-03-08,
+                 2023-03-09,2023-03-10,2023-03-11,2023-03-12,2023-03-13,2023-03-14,2023-03-15,2023-03-16,
+                 2023-03-17,2023-03-18,2023-03-19,2023-03-20,2023-03-21,2023-03-22,2023-03-23,2023-03-24,
+                 2023-03-25,2023-03-26,2023-03-27,2023-03-28,2023-03-29,2023-03-30,2023-03-31,2023-04-01,
+                 2023-04-02,2023-04-03,2023-04-04,2023-04-05,2023-04-06,2023-04-07,2023-04-08,2023-04-09,
+                 2023-04-10,2023-04-11,2023-04-12,2023-04-13,2023-04-14,2023-04-15,2023-04-16,2023-04-17,
+                 2023-04-18,2023-04-19,2023-04-20,2023-04-21,2023-04-22,2023-04-23,2023-04-24,2023-04-25,
+                 2023-04-26,2023-04-27,2023-04-28,2023-04-29,2023-04-30,2023-05-01,2023-05-02,2023-05-03,
+                 2023-05-04,2023-05-05,2023-05-06,2023-05-07,2023-05-08,2023-05-09,2023-05-10,2023-05-11,
+                 2023-05-12,2023-05-13,2023-05-14,2023-05-15,2023-05-16,2023-05-17,2023-05-18,2023-05-19,
+                 2023-05-20,2023-05-21,2023-05-22,2023-05-23,2023-05-24,2023-05-25,2023-05-26,2023-05-27,
+                 2023-05-28,2023-05-29,2023-05-30,2023-05-31,2023-06-01,2023-06-02,2023-06-03,2023-06-04,
+                 2023-06-05,2023-06-06,2023-06-07,2023-06-08,2023-06-09,2023-06-10,2023-06-11,2023-06-12,
+                 2023-06-13,2023-06-14,2023-06-15,2023-06-16,2023-06-17,2023-06-18,2023-06-19,2023-06-20,
+                 2023-06-21,2023-06-22,2023-06-23,2023-06-24,2023-06-25,2023-06-26,2023-06-27,2023-06-28,
+                 2023-06-29,2023-06-30,2023-07-01,2023-07-02,2023-07-03,2023-07-04,2023-07-05,2023-07-06,
+                 2023-07-07,2023-07-08,2023-07-09,2023-07-10,2023-07-11,2023-07-12,2023-07-13,2023-07-14,
+                 2023-07-15,2023-07-16,2023-07-17,2023-07-18,2023-07-19,2023-07-20,2023-07-21,2023-07-22,
+                 2023-07-23,2023-07-24,2023-07-25,2023-07-26,2023-07-27,2023-07-28,2023-07-29,2023-07-30,
+                 2023-07-31,2023-08-01,2023-08-02,2023-08-03,2023-08-04,2023-08-05,2023-08-06,2023-08-07,
+                 2023-08-08,2023-08-09,2023-08-10,2023-08-11,2023-08-12,2023-08-13,2023-08-14,2023-08-15,
+                 2023-08-16,2023-08-17,2023-08-18,2023-08-19,2023-08-20,2023-08-21,2023-08-22,2023-08-23,
+                 2023-08-24,2023-08-25,2023-08-26,2023-08-27,2023-08-28,2023-08-29,2023-08-30,2023-08-31,
+                 2023-09-01,2023-09-02,2023-09-03,2023-09-04,2023-09-05,2023-09-06,2023-09-07,2023-09-08,
+                 2023-09-09,2023-09-10,2023-09-11,2023-09-12,2023-09-13,2023-09-14,2023-09-15,2023-09-16,
+                 2023-09-17,2023-09-18,2023-09-19,2023-09-20,2023-09-21,2023-09-22,2023-09-23,2023-09-24,
+                 2023-09-25,2023-09-26,2023-09-27,2023-09-28,2023-09-29,2023-09-30,2023-10-01,2023-10-02,
+                 2023-10-03,2023-10-04,2023-10-05,2023-10-06,2023-10-07,2023-10-08,2023-10-09,2023-10-10,
+                 2023-10-11,2023-10-12,2023-10-13,2023-10-14,2023-10-15,2023-10-16,2023-10-17,2023-10-18,
+                 2023-10-19,2023-10-20,2023-10-21,2023-10-22,2023-10-23,2023-10-24,2023-10-25,2023-10-26,
+                 2023-10-27,2023-10-28,2023-10-29,2023-10-29,2023-10-30,2023-10-31,2023-11-01,2023-11-02,2023-11-03)
+
+check_out_date <- c(2022-10-27,2022-10-28,2022-10-29,2022-10-30,2022-10-31,2022-11-01,
+                  2022-11-02,2022-11-03,2022-11-04,2022-11-05,2022-11-06,2022-11-07,2022-11-08,2022-11-09,
+                  2022-11-10,2022-11-11,2022-11-12,2022-11-13,2022-11-14,2022-11-15,2022-11-16,2022-11-17,
+                  2022-11-18,2022-11-19,2022-11-20,2022-11-21,2022-11-22,2022-11-23,2022-11-24,2022-11-25,
+                  2022-11-26,2022-11-27,2022-11-28,2022-11-29,2022-11-30,2022-12-01,2022-12-02,2022-12-03,
+                  2022-12-04,2022-12-05,2022-12-06,2022-12-07,2022-12-08,2022-12-09,2022-12-10,2022-12-11,
+                  2022-12-12,2022-12-13,2022-12-14,2022-12-15,2022-12-16,2022-12-17,2022-12-18,2022-12-19,
+                  2022-12-20,2022-12-21,2022-12-22,2022-12-23,2022-12-24,2022-12-25,2022-12-26,2022-12-27,
+                  2022-12-28,2022-12-29,2022-12-30,2022-12-31,2023-01-01,2023-01-02,2023-01-03,2023-01-04,
+                  2023-01-05,2023-01-06,2023-01-07,2023-01-08,2023-01-09,2023-01-10,2023-01-11,2023-01-12,
+                  2023-01-13,2023-01-14,2023-01-15,2023-01-16,2023-01-17,2023-01-18,2023-01-19,2023-01-20,
+                  2023-01-21,2023-01-22,2023-01-23,2023-01-24,2023-01-25,2023-01-26,2023-01-27,2023-01-28,
+                  2023-01-29,2023-01-30,2023-01-31,2023-02-01,2023-02-02,2023-02-03,2023-02-04,2023-02-05,
+                  2023-02-06,2023-02-07,2023-02-08,2023-02-09,2023-02-10,2023-02-11,2023-02-12,2023-02-13,
+                  2023-02-14,2023-02-15,2023-02-16,2023-02-17,2023-02-18,2023-02-19,2023-02-20,2023-02-21,
+                  2023-02-22,2023-02-23,2023-02-24,2023-02-25,2023-02-26,2023-02-27,2023-02-28,2023-03-01,
+                  2023-03-02,2023-03-03,2023-03-04,2023-03-05,2023-03-06,2023-03-07,2023-03-08,2023-03-09,
+                  2023-03-10,2023-03-11,2023-03-12,2023-03-13,2023-03-14,2023-03-15,2023-03-16,2023-03-17,
+                  2023-03-18,2023-03-19,2023-03-20,2023-03-21,2023-03-22,2023-03-23,2023-03-24,2023-03-25,
+                  2023-03-26,2023-03-27,2023-03-28,2023-03-29,2023-03-30,2023-03-31,2023-04-01,2023-04-02,
+                  2023-04-03,2023-04-04,2023-04-05,2023-04-06,2023-04-07,2023-04-08,2023-04-09,2023-04-10,
+                  2023-04-11,2023-04-12,2023-04-13,2023-04-14,2023-04-15,2023-04-16,2023-04-17,2023-04-18,
+                  2023-04-19,2023-04-20,2023-04-21,2023-04-22,2023-04-23,2023-04-24,2023-04-25,2023-04-26,
+                  2023-04-27,2023-04-28,2023-04-29,2023-04-30,2023-05-01,2023-05-02,2023-05-03,2023-05-04,
+                  2023-05-05,2023-05-06,2023-05-07,2023-05-08,2023-05-09,2023-05-10,2023-05-11,2023-05-12,
+                  2023-05-13,2023-05-14,2023-05-15,2023-05-16,2023-05-17,2023-05-18,2023-05-19,2023-05-20,
+                  2023-05-21,2023-05-22,2023-05-23,2023-05-24,2023-05-25,2023-05-26,2023-05-27,2023-05-28,
+                  2023-05-29,2023-05-30,2023-05-31,2023-06-01,2023-06-02,2023-06-03,2023-06-04,2023-06-05,
+                  2023-06-06,2023-06-07,2023-06-08,2023-06-09,2023-06-10,2023-06-11,2023-06-12,2023-06-13,
+                  2023-06-14,2023-06-15,2023-06-16,2023-06-17,2023-06-18,2023-06-19,2023-06-20,2023-06-21,
+                  2023-06-22,2023-06-23,2023-06-24,2023-06-25,2023-06-26,2023-06-27,2023-06-28,2023-06-29,
+                  2023-06-30,2023-07-01,2023-07-02,2023-07-03,2023-07-04,2023-07-05,2023-07-06,2023-07-07,
+                  2023-07-08,2023-07-09,2023-07-10,2023-07-11,2023-07-12,2023-07-13,2023-07-14,2023-07-15,
+                  2023-07-16,2023-07-17,2023-07-18,2023-07-19,2023-07-20,2023-07-21,2023-07-22,2023-07-23,
+                  2023-07-24,2023-07-25,2023-07-26,2023-07-27,2023-07-28,2023-07-29,2023-07-30,2023-07-31,
+                  2023-08-01,2023-08-02,2023-08-03,2023-08-04,2023-08-05,2023-08-06,2023-08-07,2023-08-08,
+                  2023-08-09,2023-08-10,2023-08-11,2023-08-12,2023-08-13,2023-08-14,2023-08-15,2023-08-16,
+                  2023-08-17,2023-08-18,2023-08-19,2023-08-20,2023-08-21,2023-08-22,2023-08-23,2023-08-24,
+                  2023-08-25,2023-08-26,2023-08-27,2023-08-28,2023-08-29,2023-08-30,2023-08-31,2023-09-01,
+                  2023-09-02,2023-09-03,2023-09-04,2023-09-05,2023-09-06,2023-09-07,2023-09-08,2023-09-09,
+                  2023-09-10,2023-09-11,2023-09-12,2023-09-13,2023-09-14,2023-09-15,2023-09-16,2023-09-17,
+                  2023-09-18,2023-09-19,2023-09-20,2023-09-21,2023-09-22,2023-09-23,2023-09-24,2023-09-25,
+                  2023-09-26,2023-09-27,2023-09-28,2023-09-29,2023-09-30,2023-10-01,2023-10-02,2023-10-03,
+                  2023-10-04,2023-10-05,2023-10-06,2023-10-07,2023-10-08,2023-10-09,2023-10-10,2023-10-11,
+                  2023-10-12,2023-10-13,2023-10-14,2023-10-15,2023-10-16,2023-10-17,2023-10-18,2023-10-19,
+                  2023-10-20,2023-10-21,2023-10-22,2023-10-23,2023-10-24,2023-10-25,2023-10-26,2023-10-27,
+                  2023-10-28,2023-10-29,2023-10-29,2023-10-30,2023-10-31,2023-11-01,2023-11-02,2023-11-03,2023-11-04)
+
+check_in_date_str <- c("2022-10-26","2022-10-27","2022-10-28","2022-10-29","2022-10-30","2022-10-31", 
+                       "2022-11-01","2022-11-02","2022-11-03","2022-11-04","2022-11-05","2022-11-06","2022-11-07","2022-11-08",
+                       "2022-11-09","2022-11-10","2022-11-11","2022-11-12","2022-11-13","2022-11-14","2022-11-15","2022-11-16",
+                       "2022-11-17","2022-11-18","2022-11-19","2022-11-20","2022-11-21","2022-11-22","2022-11-23","2022-11-24",
+                       "2022-11-25","2022-11-26","2022-11-27","2022-11-28","2022-11-29","2022-11-30","2022-12-01","2022-12-02",
+                       "2022-12-03","2022-12-04","2022-12-05","2022-12-06","2022-12-07","2022-12-08","2022-12-09","2022-12-10",
+                       "2022-12-11","2022-12-12","2022-12-13","2022-12-14","2022-12-15","2022-12-16","2022-12-17","2022-12-18",
+                       "2022-12-19","2022-12-20","2022-12-21","2022-12-22","2022-12-23","2022-12-24","2022-12-25","2022-12-26",
+                       "2022-12-27","2022-12-28","2022-12-29","2022-12-30","2022-12-31","2023-01-01","2023-01-02","2023-01-03",
+                       "2023-01-04","2023-01-05","2023-01-06","2023-01-07","2023-01-08","2023-01-09","2023-01-10","2023-01-11",
+                       "2023-01-12","2023-01-13","2023-01-14","2023-01-15","2023-01-16","2023-01-17","2023-01-18","2023-01-19",
+                       "2023-01-20","2023-01-21","2023-01-22","2023-01-23","2023-01-24","2023-01-25","2023-01-26","2023-01-27",
+                       "2023-01-28","2023-01-29","2023-01-30","2023-01-31","2023-02-01","2023-02-02","2023-02-03","2023-02-04",
+                       "2023-02-05","2023-02-06","2023-02-07","2023-02-08","2023-02-09","2023-02-10","2023-02-11","2023-02-12",
+                       "2023-02-13","2023-02-14","2023-02-15","2023-02-16","2023-02-17","2023-02-18","2023-02-19","2023-02-20",
+                       "2023-02-21","2023-02-22","2023-02-23","2023-02-24","2023-02-25","2023-02-26","2023-02-27","2023-02-28",
+                       "2023-03-01","2023-03-02","2023-03-03","2023-03-04","2023-03-05","2023-03-06","2023-03-07","2023-03-08",
+                       "2023-03-09","2023-03-10","2023-03-11","2023-03-12","2023-03-13","2023-03-14","2023-03-15","2023-03-16",
+                       "2023-03-17","2023-03-18","2023-03-19","2023-03-20","2023-03-21","2023-03-22","2023-03-23","2023-03-24",
+                       "2023-03-25","2023-03-26","2023-03-27","2023-03-28","2023-03-29","2023-03-30","2023-03-31","2023-04-01",
+                       "2023-04-02","2023-04-03","2023-04-04","2023-04-05","2023-04-06","2023-04-07","2023-04-08","2023-04-09",
+                       "2023-04-10","2023-04-11","2023-04-12","2023-04-13","2023-04-14","2023-04-15","2023-04-16","2023-04-17",
+                       "2023-04-18","2023-04-19","2023-04-20","2023-04-21","2023-04-22","2023-04-23","2023-04-24","2023-04-25",
+                       "2023-04-26","2023-04-27","2023-04-28","2023-04-29","2023-04-30","2023-05-01","2023-05-02","2023-05-03",
+                       "2023-05-04","2023-05-05","2023-05-06","2023-05-07","2023-05-08","2023-05-09","2023-05-10","2023-05-11",
+                       "2023-05-12","2023-05-13","2023-05-14","2023-05-15","2023-05-16","2023-05-17","2023-05-18","2023-05-19",
+                       "2023-05-20","2023-05-21","2023-05-22","2023-05-23","2023-05-24","2023-05-25","2023-05-26","2023-05-27",
+                       "2023-05-28","2023-05-29","2023-05-30","2023-05-31","2023-06-01","2023-06-02","2023-06-03","2023-06-04",
+                       "2023-06-05","2023-06-06","2023-06-07","2023-06-08","2023-06-09","2023-06-10","2023-06-11","2023-06-12",
+                       "2023-06-13","2023-06-14","2023-06-15","2023-06-16","2023-06-17","2023-06-18","2023-06-19","2023-06-20",
+                       "2023-06-21","2023-06-22","2023-06-23","2023-06-24","2023-06-25","2023-06-26","2023-06-27","2023-06-28",
+                       "2023-06-29","2023-06-30","2023-07-01","2023-07-02","2023-07-03","2023-07-04","2023-07-05","2023-07-06",
+                       "2023-07-07","2023-07-08","2023-07-09","2023-07-10","2023-07-11","2023-07-12","2023-07-13","2023-07-14",
+                       "2023-07-15","2023-07-16","2023-07-17","2023-07-18","2023-07-19","2023-07-20","2023-07-21","2023-07-22",
+                       "2023-07-23","2023-07-24","2023-07-25","2023-07-26","2023-07-27","2023-07-28","2023-07-29","2023-07-30",
+                       "2023-07-31","2023-08-01","2023-08-02","2023-08-03","2023-08-04","2023-08-05","2023-08-06","2023-08-07",
+                       "2023-08-08","2023-08-09","2023-08-10","2023-08-11","2023-08-12","2023-08-13","2023-08-14","2023-08-15",
+                       "2023-08-16","2023-08-17","2023-08-18","2023-08-19","2023-08-20","2023-08-21","2023-08-22","2023-08-23",
+                       "2023-08-24","2023-08-25","2023-08-26","2023-08-27","2023-08-28","2023-08-29","2023-08-30","2023-08-31",
+                       "2023-09-01","2023-09-02","2023-09-03","2023-09-04","2023-09-05","2023-09-06","2023-09-07","2023-09-08",
+                       "2023-09-09","2023-09-10","2023-09-11","2023-09-12","2023-09-13","2023-09-14","2023-09-15","2023-09-16",
+                       "2023-09-17","2023-09-18","2023-09-19","2023-09-20","2023-09-21","2023-09-22","2023-09-23","2023-09-24",
+                       "2023-09-25","2023-09-26","2023-09-27","2023-09-28","2023-09-29","2023-09-30","2023-10-01","2023-10-02",
+                       "2023-10-03","2023-10-04","2023-10-05","2023-10-06","2023-10-07","2023-10-08","2023-10-09","2023-10-10",
+                       "2023-10-11","2023-10-12","2023-10-13","2023-10-14","2023-10-15","2023-10-16","2023-10-17","2023-10-18",
+                       "2023-10-19","2023-10-20","2023-10-21","2023-10-22","2023-10-23","2023-10-24","2023-10-25","2023-10-26",
+                       "2023-10-27","2023-10-28","2023-10-29","2023-10-29","2023-10-30","2023-10-31","2023-11-01","2023-11-02","2023-11-03")
+
+check_out_date_str <- c("2022-10-27","2022-10-28","2022-10-29","2022-10-30","2022-10-31","2022-11-01",
+                        "2022-11-02","2022-11-03","2022-11-04","2022-11-05","2022-11-06","2022-11-07","2022-11-08","2022-11-09",
+                        "2022-11-10","2022-11-11","2022-11-12","2022-11-13","2022-11-14","2022-11-15","2022-11-16","2022-11-17",
+                        "2022-11-18","2022-11-19","2022-11-20","2022-11-21","2022-11-22","2022-11-23","2022-11-24","2022-11-25",
+                        "2022-11-26","2022-11-27","2022-11-28","2022-11-29","2022-11-30","2022-12-01","2022-12-02","2022-12-03",
+                        "2022-12-04","2022-12-05","2022-12-06","2022-12-07","2022-12-08","2022-12-09","2022-12-10","2022-12-11",
+                        "2022-12-12","2022-12-13","2022-12-14","2022-12-15","2022-12-16","2022-12-17","2022-12-18","2022-12-19",
+                        "2022-12-20","2022-12-21","2022-12-22","2022-12-23","2022-12-24","2022-12-25","2022-12-26","2022-12-27",
+                        "2022-12-28","2022-12-29","2022-12-30","2022-12-31","2023-01-01","2023-01-02","2023-01-03","2023-01-04",
+                        "2023-01-05","2023-01-06","2023-01-07","2023-01-08","2023-01-09","2023-01-10","2023-01-11","2023-01-12",
+                        "2023-01-13","2023-01-14","2023-01-15","2023-01-16","2023-01-17","2023-01-18","2023-01-19","2023-01-20",
+                        "2023-01-21","2023-01-22","2023-01-23","2023-01-24","2023-01-25","2023-01-26","2023-01-27","2023-01-28",
+                        "2023-01-29","2023-01-30","2023-01-31","2023-02-01","2023-02-02","2023-02-03","2023-02-04","2023-02-05",
+                        "2023-02-06","2023-02-07","2023-02-08","2023-02-09","2023-02-10","2023-02-11","2023-02-12","2023-02-13",
+                        "2023-02-14","2023-02-15","2023-02-16","2023-02-17","2023-02-18","2023-02-19","2023-02-20","2023-02-21",
+                        "2023-02-22","2023-02-23","2023-02-24","2023-02-25","2023-02-26","2023-02-27","2023-02-28","2023-03-01",
+                        "2023-03-02","2023-03-03","2023-03-04","2023-03-05","2023-03-06","2023-03-07","2023-03-08","2023-03-09",
+                        "2023-03-10","2023-03-11","2023-03-12","2023-03-13","2023-03-14","2023-03-15","2023-03-16","2023-03-17",
+                        "2023-03-18","2023-03-19","2023-03-20","2023-03-21","2023-03-22","2023-03-23","2023-03-24","2023-03-25",
+                        "2023-03-26","2023-03-27","2023-03-28","2023-03-29","2023-03-30","2023-03-31","2023-04-01","2023-04-02",
+                        "2023-04-03","2023-04-04","2023-04-05","2023-04-06","2023-04-07","2023-04-08","2023-04-09","2023-04-10",
+                        "2023-04-11","2023-04-12","2023-04-13","2023-04-14","2023-04-15","2023-04-16","2023-04-17","2023-04-18",
+                        "2023-04-19","2023-04-20","2023-04-21","2023-04-22","2023-04-23","2023-04-24","2023-04-25","2023-04-26",
+                        "2023-04-27","2023-04-28","2023-04-29","2023-04-30","2023-05-01","2023-05-02","2023-05-03","2023-05-04",
+                        "2023-05-05","2023-05-06","2023-05-07","2023-05-08","2023-05-09","2023-05-10","2023-05-11","2023-05-12",
+                        "2023-05-13","2023-05-14","2023-05-15","2023-05-16","2023-05-17","2023-05-18","2023-05-19","2023-05-20",
+                        "2023-05-21","2023-05-22","2023-05-23","2023-05-24","2023-05-25","2023-05-26","2023-05-27","2023-05-28",
+                        "2023-05-29","2023-05-30","2023-05-31","2023-06-01","2023-06-02","2023-06-03","2023-06-04","2023-06-05",
+                        "2023-06-06","2023-06-07","2023-06-08","2023-06-09","2023-06-10","2023-06-11","2023-06-12","2023-06-13",
+                        "2023-06-14","2023-06-15","2023-06-16","2023-06-17","2023-06-18","2023-06-19","2023-06-20","2023-06-21",
+                        "2023-06-22","2023-06-23","2023-06-24","2023-06-25","2023-06-26","2023-06-27","2023-06-28","2023-06-29",
+                        "2023-06-30","2023-07-01","2023-07-02","2023-07-03","2023-07-04","2023-07-05","2023-07-06","2023-07-07",
+                        "2023-07-08","2023-07-09","2023-07-10","2023-07-11","2023-07-12","2023-07-13","2023-07-14","2023-07-15",
+                        "2023-07-16","2023-07-17","2023-07-18","2023-07-19","2023-07-20","2023-07-21","2023-07-22","2023-07-23",
+                        "2023-07-24","2023-07-25","2023-07-26","2023-07-27","2023-07-28","2023-07-29","2023-07-30","2023-07-31",
+                        "2023-08-01","2023-08-02","2023-08-03","2023-08-04","2023-08-05","2023-08-06","2023-08-07","2023-08-08",
+                        "2023-08-09","2023-08-10","2023-08-11","2023-08-12","2023-08-13","2023-08-14","2023-08-15","2023-08-16",
+                        "2023-08-17","2023-08-18","2023-08-19","2023-08-20","2023-08-21","2023-08-22","2023-08-23","2023-08-24",
+                        "2023-08-25","2023-08-26","2023-08-27","2023-08-28","2023-08-29","2023-08-30","2023-08-31","2023-09-01",
+                        "2023-09-02","2023-09-03","2023-09-04","2023-09-05","2023-09-06","2023-09-07","2023-09-08","2023-09-09",
+                        "2023-09-10","2023-09-11","2023-09-12","2023-09-13","2023-09-14","2023-09-15","2023-09-16","2023-09-17",
+                        "2023-09-18","2023-09-19","2023-09-20","2023-09-21","2023-09-22","2023-09-23","2023-09-24","2023-09-25",
+                        "2023-09-26","2023-09-27","2023-09-28","2023-09-29","2023-09-30","2023-10-01","2023-10-02","2023-10-03",
+                        "2023-10-04","2023-10-05","2023-10-06","2023-10-07","2023-10-08","2023-10-09","2023-10-10","2023-10-11",
+                        "2023-10-12","2023-10-13","2023-10-14","2023-10-15","2023-10-16","2023-10-17","2023-10-18","2023-10-19",
+                        "2023-10-20","2023-10-21","2023-10-22","2023-10-23","2023-10-24","2023-10-25","2023-10-26","2023-10-27",
+                        "2023-10-28","2023-10-29","2023-10-29","2023-10-30","2023-10-31","2023-11-01","2023-11-02","2023-11-03", "2023-11-04")
+
+# This function helps to remove the unused data
+removeData <- function(data){
+  data$base$picture = NULL
+  data$base$star = NULL
+  data$base$starType = NULL
+  data$base$badge = NULL
+  data$base$hotelUniqueKey = NULL
+  data$base$isFavoriteHotel = NULL
+  data$money$isSoldOut = NULL
+  data$money$crossLinePrice = NULL
+  data$money$currency = NULL
+  data$position = NULL
+  data$encourage = NULL
+  data$comment = NULL
+  data$seoInfo = NULL
+  return(data)
+}
+
+# API call function to get the pricing data from individual hotels 
+apiCallNearbyHotel <- function(hotelId, checkInDate, checkOutDate){
+  res = POST(
+    "https://sg.trip.com/restapi/soa2/16708/json/hotelSearchNearby?x-traceID=1658849562341.1pmnm5-1666016479066-1666203502",
+    add_headers('authority = sg.trip.com'),
+    add_headers('accept = application/json'),
+    add_headers('accept-language = en-US,en;q=0.9'),
+    add_headers('content-type = application/json;charset=UTF-8'),
+    add_headers('cookie = ibu_home_language_match_union_flag=0; _abtest_userid=fb70a796-d789-4b0b-80d8-afdd54b85933; _gcl_au=1.1.562621262.1658849563; _RGUID=751c843f-5682-48a5-a9ff-1e84de692fb8; _RDG=281a5c31eaa24722803983fe33c78ee19f; _RSG=bYaWMz3XSK7u.IQUJe7_dA; _bfaStatusPVSend=1; ibu_online_home_language_match={"isFromTWNotZh" =false,"isFromIPRedirect" =false,"isFromLastVisited" =true,"isRedirect" =false,"isShowSuggestion" =false,"lastVisited" ="https =//sg.trip.com?locale=en-sg"}; cookiePricesDisplayed=SGD; _tp_search_latest_channel_name=hotels; _gid=GA1.2.1760276045.1663081390; _RF1=137.132.215.24; g_state={"i_p" =1663088594680,"i_l" =1}; ibu_h5_site=SG; ibu_h5_group=trip; ibu_h5_local=en-sg; ibu_h5_lang=ensg; ibu_h5_curr=SGD; IBU_TRANCE_LOG_URL=%2Fhotels%2Fsingapore-hotel-detail-996041%2Fparkroyal-on-beach-road-singapore%2F; librauuid=; _clck=5quac4|1|f4u|0; IBU_TRANCE_LOG_P=37682130973; hotel_h5_view_ids=%5B%22996041%22%5D; IBU_showtotalamt=1; ibu-h5-pop-hotel=0; ibu_online_permission_cls_ct=2; ibu_online_permission_cls_gap=1663082802191; hotelhst=1164390341; ibulanguage=SG; ibulocale=en_sg; intl_ht1=h4%3D73_687472%2C73_909897%2C73_994990%2C73_996041; _bfa=1.1658849562341.1pmnm5.1.1658849562341.1663083559409.2.32.10320668588; _bfs=1.18; _ubtstatus=%7B%22vid%22%3A%221658849562341.1pmnm5%22%2C%22sid%22%3A2%2C%22pvid%22%3A32%2C%22pid%22%3A10320668147%7D; hotel=687472; _ga=GA1.2.523270998.1658849562; _uetsid=505649c0337611ed8b2fb3e69a5735ed; _uetvid=3d45d8900cf811edadcee3300718def6; _clsk=kgr7wv|1663083673350|9|0|l.clarity.ms/collect; _bfi=p1%3D10320668147%26p2%3D10320668147%26v1%3D32%26v2%3D31; _bfaStatus=success; _ga_X437DZ73MR=GS1.1.1663081390.3.1.1663083757.0.0.0'),
+    add_headers('dnt = 1'),
+    add_headers('origin = https =//sg.trip.com'),
+    add_headers('p = 37682130973'),
+    add_headers('referer = https =//sg.trip.com/hotels/w/detail?hotelid=687472&curr=SGD&locale=en-SG&checkin=2022-09-28&checkout=2022-09-29&hoteluniquekey=H4sIAAAAAAAAAOPqY-HilWA0-A8DjEJMHIxSP5g5fr_dt5rF4regIwMIbJnl4Alm5Mx3COApBDN_tDg0Mgpn-zx-dK7RYRJjLyNn_6GvGjGvGxwEwYzDNQ5KzhzdL5byC4hLbHj3SFWBUROm0RDGsChz1HWWeQ0ywhPGCGLleJApwRLFxrF3jpsEh5IOx_01CwQFtCTOP76npcAKMcQhBGoIkGFxkg-o5yYPUA-DExvHv2XMEiwzGD_80tzICFbyoMhhByPTCcabTAuYLkybwLiLCaroEBMrxy19CZZTQPoJUPslJoZbTAyPmCAOeMXE8IkJ6ohfMC1NzBClXcwMk5ghumcxQ9QvYmY4xQIRusQymTG6Wik7tVLJykRHqSSzJCdVyUopzDFESUcpMTe_NK8EyDUy0TM0BQqUJFZ4poAVJifmJJfmJJakhlQWADWY1epgGhKcWlSWmZyqkJaaimyYsZmepSHCMHMshsXeYmF4xMIUHfuJheEXC8TRTawMXawMk1jZOObtZZJgEWIFR7yUgrGJZVJqmoG5hVFKskmieZKlZYpJUqKJUVKyqYmJoamZAp_G4sNNM9mMWLsYmYLdrZilGN08GIPYTC0MzV1comS4mIPdXQRXn78a9ua8sIMUiKcI4yWxpubpBrtnXOMqYOxi5BBg9GCMYKxgXMXIsIGR8QQj4yVGDmdH3wBHT3e_R4y8Hv4hrj7x7o4-Pq5Bka8YQSYBAAQ5MOS3AgAA'),
+    add_headers('sec-ch-ua = "Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"'),
+    add_headers('sec-ch-ua-mobile = ?1'),
+    add_headers('sec-ch-ua-platform = "Android"'),
+    add_headers('sec-fetch-dest = empty'),
+    add_headers('sec-fetch-mode = cors'),
+    add_headers('sec-fetch-site = same-origin'),
+    add_headers('user-agent = Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Mobile Safari/537.36'),
+    body = sprintf('{"searchCondition":{"masterHotelId":%d,"adult":1,"child":0,"age":"","priceType":1,"priceTypes":"1","cityId":73,"checkIn":%s,"checkOut":%s,"roomNum":1,"isBusiness":0},"filterCondition":{},"mapType":null,"isNewMapType":"1","Head":{"Locale":"en-SG","Currency":"SGD","AID":"30074","SID":"1622045","ClientID":"1658849562341.1pmnm5","OUID":"ctag.hash.463e4d8ff02f","CAID":"30074","CSID":"1622045","COUID":"ctag.hash.463e4d8ff02f","TimeZone":"8","PageID":"10320668577","HotelExtension":{"WebpSupport":true,"Qid":201198490140,"hasAidInUrl":false,"group":"TRIP","PID":"1e97f1cd-b771-44f3-9290-d98333b53452"},"Frontend":{"vid":"1658849562341.1pmnm5","sessionID":"9","pvid":"74"},"P":"91033365022","Device":"WAP","Version":"0"}}', as.integer(hotelId), as.character(checkInDate), as.character(checkOutDate)),
+    encode = "json",
+    verbose()
+  )
+  data <- fromJSON(rawToChar(res$content))
+  data <- data$Response$hotelList
+  data <- removeData(data)
+  data <- unnest(as.data.frame(data), cols = c(base, money))
+  return(data)
+}
+
+for (i in hotel_id) {
+  for (j in 1:365) {
+    data <- apiCallNearbyHotel(i, check_in_date[j], check_out_date[j])
+    df = data.frame(
+      hotelId = data$hotelId,
+      hotelName = data$hotelName,
+      pricePerNight = data$price,
+      checkInDate = check_in_date_str[j], 
+      checkOutDate = check_out_date_str[j]
+    )
+    df_hotel_prices <- rbind(df_hotel_prices,df)
+  }
+}
+
+# Removing all duplicated records
+df_hotel_prices <- unique(df_hotel_prices)
+
+# Export as csv
+write.csv(df_hotel_prices,"hotel_prices.csv", row.names = FALSE)
+```
+
+
+* **Surrounding Places Of Interest Per Hotel Data** 
+
+```{r eval=FALSE}
+# Initialize an empty data frame
+df_places_info <- data.frame(matrix(ncol=4, nrow=0))
+cols <- c('distance' ,'placeName','distanceNumber','hotelId')
+colnames(df_places_info) <- cols
+
+removeData_place_info <- function(data){
+  data$lat = NULL
+  data$lng = NULL
+  data$transportType = NULL
+  data$ploygonDetailInfo = NULL
+  data$arrivalWay = NULL
+  return(data)
+}
+
+apiCallPlacesOfInterest <- function(hotelId){
+  df_subset_places_info <- data.frame(matrix(ncol=6, nrow=0))
+  cols <- c('distance' ,'placeName', 'distanceNumber','hotelId')
+  colnames(df_subset_places_info) <- cols
+  res = POST(
+    "https://sg.trip.com/restapi/soa2/16709/json/hotelPlaceInfo",
+    add_headers('authority = sg.trip.com'),
+    add_headers('accept = application/json'),
+    add_headers('accept-language = en-US,en;q=0.9'),
+    add_headers('content-type = application/json;charset=UTF-8'),
+    add_headers('cookie = ibu_home_language_match_union_flag=0; _abtest_userid=fb70a796-d789-4b0b-80d8-afdd54b85933; _gcl_au=1.1.562621262.1658849563; _RGUID=751c843f-5682-48a5-a9ff-1e84de692fb8; _RDG=281a5c31eaa24722803983fe33c78ee19f; _RSG=bYaWMz3XSK7u.IQUJe7_dA; _bfaStatusPVSend=1; ibu_online_home_language_match={"isFromTWNotZh" =false,"isFromIPRedirect" =false,"isFromLastVisited" =true,"isRedirect" =false,"isShowSuggestion" =false,"lastVisited" ="https =//sg.trip.com?locale=en-sg"}; cookiePricesDisplayed=SGD; _tp_search_latest_channel_name=hotels; _gid=GA1.2.1760276045.1663081390; _RF1=137.132.215.24; g_state={"i_p" =1663088594680,"i_l" =1}; ibu_h5_site=SG; ibu_h5_group=trip; ibu_h5_local=en-sg; ibu_h5_lang=ensg; ibu_h5_curr=SGD; IBU_TRANCE_LOG_URL=%2Fhotels%2Fsingapore-hotel-detail-996041%2Fparkroyal-on-beach-road-singapore%2F; librauuid=; _clck=5quac4|1|f4u|0; IBU_TRANCE_LOG_P=37682130973; hotel_h5_view_ids=%5B%22996041%22%5D; IBU_showtotalamt=1; ibu-h5-pop-hotel=0; ibu_online_permission_cls_ct=2; ibu_online_permission_cls_gap=1663082802191; hotelhst=1164390341; ibulanguage=SG; ibulocale=en_sg; intl_ht1=h4%3D73_687472%2C73_909897%2C73_994990%2C73_996041; _bfa=1.1658849562341.1pmnm5.1.1658849562341.1663083559409.2.32.10320668588; _bfs=1.18; _ubtstatus=%7B%22vid%22%3A%221658849562341.1pmnm5%22%2C%22sid%22%3A2%2C%22pvid%22%3A32%2C%22pid%22%3A10320668147%7D; hotel=687472; _ga=GA1.2.523270998.1658849562; _uetsid=505649c0337611ed8b2fb3e69a5735ed; _uetvid=3d45d8900cf811edadcee3300718def6; _clsk=kgr7wv|1663083673350|9|0|l.clarity.ms/collect; _bfi=p1%3D10320668147%26p2%3D10320668147%26v1%3D32%26v2%3D31; _bfaStatus=success; _ga_X437DZ73MR=GS1.1.1663081390.3.1.1663083757.0.0.0'),
+    add_headers('dnt = 1'),
+    add_headers('origin = https =//sg.trip.com'),
+    add_headers('p = 37682130973'),
+    add_headers('referer = https =//sg.trip.com/hotels/w/detail?hotelid=687472&curr=SGD&locale=en-SG&checkin=2022-09-28&checkout=2022-09-29&hoteluniquekey=H4sIAAAAAAAAAOPqY-HilWA0-A8DjEJMHIxSP5g5fr_dt5rF4regIwMIbJnl4Alm5Mx3COApBDN_tDg0Mgpn-zx-dK7RYRJjLyNn_6GvGjGvGxwEwYzDNQ5KzhzdL5byC4hLbHj3SFWBUROm0RDGsChz1HWWeQ0ywhPGCGLleJApwRLFxrF3jpsEh5IOx_01CwQFtCTOP76npcAKMcQhBGoIkGFxkg-o5yYPUA-DExvHv2XMEiwzGD_80tzICFbyoMhhByPTCcabTAuYLkybwLiLCaroEBMrxy19CZZTQPoJUPslJoZbTAyPmCAOeMXE8IkJ6ohfMC1NzBClXcwMk5ghumcxQ9QvYmY4xQIRusQymTG6Wik7tVLJykRHqSSzJCdVyUopzDFESUcpMTe_NK8EyDUy0TM0BQqUJFZ4poAVJifmJJfmJJakhlQWADWY1epgGhKcWlSWmZyqkJaaimyYsZmepSHCMHMshsXeYmF4xMIUHfuJheEXC8TRTawMXawMk1jZOObtZZJgEWIFR7yUgrGJZVJqmoG5hVFKskmieZKlZYpJUqKJUVKyqYmJoamZAp_G4sNNM9mMWLsYmYLdrZilGN08GIPYTC0MzV1comS4mIPdXQRXn78a9ua8sIMUiKcI4yWxpubpBrtnXOMqYOxi5BBg9GCMYKxgXMXIsIGR8QQj4yVGDmdH3wBHT3e_R4y8Hv4hrj7x7o4-Pq5Bka8YQSYBAAQ5MOS3AgAA'),
+    add_headers('sec-ch-ua = "Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"'),
+    add_headers('sec-ch-ua-mobile = ?1'),
+    add_headers('sec-ch-ua-platform = "Android"'),
+    add_headers('sec-fetch-dest = empty'),
+    add_headers('sec-fetch-mode = cors'),
+    add_headers('sec-fetch-site = same-origin'),
+    add_headers('user-agent = Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Mobile Safari/537.36'),
+    body = sprintf('{"masterHotelId":%d,"cityId":73,"mapType":"gg","isNewMap":"1","Head":{"Locale":"en-SG","Currency":"SGD","AID":"1078328","SID":"2036522","ClientID":"1666449863064.r0str","OUID":"","CAID":"1078328","CSID":"2036522","COUID":"ctag.hash.f425d40516d2","TimeZone":"8","PageID":"10320668147","HotelExtension":{"WebpSupport":true,"Qid":347614227791,"hasAidInUrl":false,"group":"TRIP","PID":"af183646-4233-43d5-9efb-864925b593f7"},"Frontend":{"vid":"","sessionID":"","pvid":""},"P":"22670627744","Device":"PC","Version":"0"}}', as.integer(hotelId)),
+    encode = "json",
+    verbose()
+  )
+  data <- fromJSON(rawToChar(res$content))
+  data <- data$Response$placeInfoList$list
+  for (i in 1:length(data)) {
+    flattenData <- data[[i]]
+    flattenData <- removeData_place_info(flattenData)
+    flattenData <- unnest(flattenData, cols = c(distance, placeName, distanceNumber))
+    flattenData <- mutate(flattenData, hotelId = hotelId)
+    df_subset_places_info <- rbind(df_subset_places_info, flattenData)
+  }
+  return(df_subset_places_info)
+}
+
+for (i in 1:length(hotel_id)) {
+    subset_df <- apiCallPlacesOfInterest(hotel_id[i])
+    df_places_info <- rbind(df_places_info,subset_df)
+}
+
+# Cleaning
+df_places_info$placeName[df_places_info$placeName == "新加坡普陀寺"] <- "The Poh Toh Si Temple"
+df_places_info$placeName[df_places_info$placeName == "新加坡河驳船游"] <- "Boat Quay "
+df_places_info$placeName[df_places_info$placeName == "旋转飞盘（科幻城市）"] <- "Universal Studio Singapore"
+df_places_info$placeName[df_places_info$placeName == "海马游乐池"] <- "Adventure Cove Waterpark"
+df_places_info$placeName[df_places_info$placeName == "港湾第二大厦"] <- "Imbiah Lookout"
+df_places_info$placeName[df_places_info$placeName == "草根书室"] <- "Grassroots Book Room"
+
+# Export as csv
+write.csv(df_places_info,"places_of_interest.csv", row.names = FALSE)
+```
+
+
+* **User Review Data** 
+
+```{r eval=FALSE}
+# Read csv 
+hotel_master_data = read.csv("hotel_info_list.csv")
+hotel_ids <- hotel_master_data$hotelId
+
+# Initialize an empty data frame
+user_review_data <- data.frame(matrix(ncol=13, nrow=0))
+cols <- c('hotelId', 'userId','nickname', 'checkinDate','content','travelType', 'travelTypeText', 'ratingAll','ratingLocation','ratingFacility', 'ratingService', 'ratingRoom', 'commentLevel')
+colnames(user_review_data) <- cols
+
+# Page should be set to 40 - we can aim to cycle through 3 pages each hotel -> that should obtain us 120 users per hotel and since we have 268 hotels that is 32160 user data
+apiCallUserReview <- function(masterHotelId){
+  
+  user_data <- data.frame(matrix(ncol=13, nrow=0))
+  cols <- c('hotelId', 'userId','nickname', 'checkinDate','content','travelType', 'travelTypeText', 'ratingAll','ratingLocation','ratingFacility', 'ratingService', 'ratingRoom', 'commentLevel')
+  colnames(user_data) <- cols
+
+  for(i in masterHotelId ){
+    for(k in 1:3){
+      res = POST(
+        "https://sg.trip.com/restapi/soa2/24077/clientHotelCommentList",
+        add_headers('User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0'),
+        add_headers('Accept: application/json'),
+        add_headers('Accept-Language: en-US,en;q=0.5'),
+        add_headers('Accept-Encoding: gzip, deflate, br'),
+        add_headers('P: 47887882168'),
+        add_headers('PID: ce3f61ab-ca1c-40f5-a07e-90268165235b'),
+        add_headers('Content-Type: application/json'),
+        add_headers('Origin: https://sg.trip.com'),
+        add_headers('Connection: keep-alive'),
+        add_headers('Cookie: ibulanguage=SG; ibulocale=en_sg; cookiePricesDisplayed=SGD; _abtest_userid=e4a61ab1-1321-4cb1-8067-e3e566e27d8b; IBU_showtotalamt=1; _bfa=1.1666344215688.hw1qp.1.1666442735463.1666448956339.5.37.1; _ubtstatus=%7B%22vid%22%3A%221666344215688.hw1qp%22%2C%22sid%22%3A5%2C%22pvid%22%3A37%2C%22pid%22%3A10320668147%7D; _gcl_au=1.1.813124332.1666344216; _ga_X437DZ73MR=GS1.1.1666414659.2.1.1666417832.0.0.0; _ga=GA1.2.156763681.1666344217; _gid=GA1.2.1653792527.1666344217; _fbp=fb.1.1666344216997.1265240203; _RF1=222.164.149.41; _RSG=9F4m_99a.zCzTlr5WcgIN8; _RDG=28a03e25478b0529ec15ae4adf1c31395a; _RGUID=cf7e9092-7fc0-43c9-85d2-aa6805d6f77d; _bfaStatusPVSend=1; _bfaStatus=fail; hotel=10231080; _uetsid=0a93ffc0512211ed8aa7f31417cc35c1; _uetvid=0a940be0512211eda5b9db1a18f8ee1a; ibu_home_language_match_union_flag=0; ibu_online_home_language_match={"isFromTWNotZh":false,"isFromIPRedirect":false,"isFromLastVisited":false,"isRedirect":false,"isShowSuggestion":false,"lastVisited":"https://sg.trip.com?locale=en-sg"}; _tp_search_latest_channel_name=hotels; IBU_TRANCE_LOG_P=47887882168; IBU_TRANCE_LOG_URL=%2Fhotels%2Fdetail%2F%3FcityId%3D73%26hotelId%3D687592%26checkIn%3D2022-10-21%26checkOut%3D2022-10-22%26adult%3D1%26children%3D0%26subStamp%3D1456%26crn%3D1%26ages%3D%26travelpurpose%3D0%26curr%3DSGD%26link%3Dbutton%26hoteluniquekey%3DH4sIAAAAAAAAAOPaxcTFJMEoxMTBKLWeiaNl2pFPjBa_BR37D33ViAnudPAEMy72OgTwFDKAgMZEh0bGjAR7eYWQLodJjE2MnGAV7pUOgoW2XNcX15Q6KLlwnDz2g0dARKL50XF5BUZNsEaGfgdDGMMi1jExJEgdZIQnjBHExnFhBqMESxQbx801qRIcSgoKLBCdDVFQnUCGxTPOIFaO84wSTFEMTmwc_3YzSbDMYGz5W7uREazkR6LDDkamA4z_YYDxBOMexgVMU_YX7GKCqj_ExMoxUUyC5RQTwyUmhltMDI-AMs9WAO1-xcTwiQlq_y-Y8iZmhi5mhknMEE2zmKFqFzEzSPEkplkYppkkJRqaJqYoCGmcuHtyFpuR9CRGpmD3U4zChmZmZsYmJkaGpmYWFnoZ5YaFBVbMUoxuHoxBbBbmZi4G5lEyXMzB7i6CHLazQ-d7izhIgXiKMF4Sa2qebrB7xluuAsYGRsYuRg4BRg_GCMYKxleMIIUA8OoWe70BAAA%26subChannel%3D; intl_ht1=h4%3D73_10231080%2C73_962739%2C73_687592; librauuid=; hotelhst=1164390341'),
+        add_headers('Sec-Fetch-Dest: empty'),
+        add_headers('Sec-Fetch-Mode: cors'),
+        add_headers('Sec-Fetch-Site: same-origin'),
+        add_headers('TE: trailers'),
+        body = sprintf('{"hotelId":%d,"pageIndex":%d,"pageSize":40,"orderBy":0,"commentTagList":[],"commentTagV2List":[],"travelTypeList":[],"roomList":[],"packageList":[],"commonStatisticList":[],"UnusefulReviewPageIndex":1,"repeatComment":1,"functionOptions":["IntegratedTARating","hidePicAndVideoAgg"],"webpSupport":true,"platform":"online","pageID":"10320668147","head":{"Version":"","userRegion":"SG","Locale":"en-SG","LocaleController":"en-SG","TimeZone":"8","Currency":"SGD","PageId":"10320668147","webpSupport":true,"userIP":"","P":"47887882168","ticket":"","clientID":"1666344215688.hw1qp","Frontend":{"vid":"1666344215688.hw1qp","sessionID":5,"pvid":37},"group":"TRIP","bu":"IBU","platform":"PC","Union":{"AllianceID":"","SID":"","Ouid":""},"HotelExtension":{"group":"TRIP","hasAidInUrl":false,"Qid":778584087182,"WebpSupport":true,"PID":"ce3f61ab-ca1c-40f5-a07e-90268165235b"}}}', as.integer(i), as.integer(k)),
+        verbose()
+      )
+      data <- content(res)
+      if(length(data$groupList) != 0){
+        for(j in 1:length(data$groupList[[1]]$commentList)){
+          df = data.frame(
+            hotelId = i,
+            userId = data$groupList[[1]]$commentList[[j]]$userInfo$userId,
+            nickname = data$groupList[[1]]$commentList[[j]]$userInfo$nickName,
+            checkinDate = data$groupList[[1]]$commentList[[j]]$checkinDate,
+            content = data$groupList[[1]]$commentList[[j]]$content,
+            travelType = data$groupList[[1]]$commentList[[j]]$travelType,
+            travelTypeText = data$groupList[[1]]$commentList[[j]]$travelTypeText,
+            ratingAll = data$groupList[[1]]$commentList[[j]]$ratingInfo$ratingAll,
+            ratingLocation = data$groupList[[1]]$commentList[[j]]$ratingInfo$ratingLocation,
+            ratingFacility = data$groupList[[1]]$commentList[[j]]$ratingInfo$ratingFacility,
+            ratingService = data$groupList[[1]]$commentList[[j]]$ratingInfo$ratingService,
+            ratingRoom = data$groupList[[1]]$commentList[[j]]$ratingInfo$ratingRoom,
+            commentLevel = data$groupList[[1]]$commentList[[j]]$ratingInfo$commentLevel
+          )
+          user_data <- rbind(user_data, df)
+        }
+      }
+    }
+  }
+  return(user_data)
+}
+user_review_data <- apiCallUserReview(hotel_ids)
+
+# Export as csv
+write.csv(user_review_data,"user_review_data.csv", row.names = FALSE)
+```
+
+</details>
+
+<details>
+
+<summary>HTML</summary>
+Before considering to use API to mine our data, HTML was our initial choice of method. However, in an attempt to incorporate R selenium to automatically load the pages, Trip.com was blocking any robot activities detect. Hence, we were not able to use automation as part of our mining process. Due to this drawback, we have decided to only mine data using HTML for situations where we do not need to run selenium. And through investigation, we found out that retrieving the amenities data from individual hotels can be easily mine using HTML. To start off the mining process, we had to determine the correct URL path to enable us to easily navigate through to each hotel's respective web pages. Following that, we inspected the page to attain the HTML element that we will be mining the data off. As we are interested to know if the types of amenity exist for the given hotel, we proceeded to input "1" or "0" (T or F) values into our data frame. The code is shown below: 
+
+
+```{r eval=FALSE}
+# Reading the excel to get the list of master hotel IDs
+hotelinfo <- read.csv("hotel_info_list.csv")
+
+# Remove duplicates 268 -> 211
+hotels <- unique(hotelinfo)
+
+#remove cancellation tag as this is causing some duplicates 211 -> 204
+hotels$freeCancelTag <- NULL
+hotels <- unique(hotels)
+
+# Creating empty df
+hotelNames <- cbind(hotels$hotelId, hotels$hotelName, hotels$location)
+colnames(hotelNames) <- c("hotelID","hotelNames","location")
+hotelNames <- as.data.frame(hotelNames)
+
+# remove one more duplicate 204->203
+hotelNames <- unique(hotelNames)
+
+# manually filling in missing location data
+hotelNames$location[hotelNames$hotelID=="712600"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="31212318"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="995050"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="1359681"] <- "Little India"
+hotelNames$location[hotelNames$hotelID=="687572"] <- "Tiong Bahru"
+
+# list of hotel ID for building vector of links 
+hotelIDList <- as.data.frame(hotelNames$hotelID)
+url <- "https://sg.trip.com/hotels/detail/?cityId=73&hotelId="
+
+generateFilenameFromURL <- function(url){
+  #Complete implementation... 
+  filename <- gsub("[:./?,&=]", "_", url)
+  filename <- paste0(filename, ".html")
+  return(filename)
+}
+
+# Build vector of URL addresses to access individual html pages
+for(i in hotelIDList){
+  fullurl <- paste0(url,i)
+  links <- fullurl
+}
+
+getHTML <- function(url, useCache = T){
+  filename <- generateFilenameFromURL(url)
+  
+  if (useCache && file.exists(filename)){
+    html <- readChar(filename, file.info(filename)$size)
+    #return (html)
+  }
+  
+  print("#downloading...")
+  req <- GET(url)
+  html <- content(req)
+  html <- as.character(html)
+  #cache the file 
+  write(html, filename)
+  #return (html)
+}
+
+# Grabbing html pages of individual hotel to build a vector of all possible amenities
+
+features <- NULL
+features_df <- data.frame()
+
+for(j in links[1:length(links)]){
+  
+  Sys.sleep(0.2)
+  page <- getHTML(j)
+  page <- read_html(page)
+  amenities <- page %>% html_elements('.facilityDesc') %>% html_text()
+
+  features <- c(features, amenities)
+  features <- unique(features)
+  
+}
+
+# empty matrix for amenities
+features <- t(sort(features))
+features_df <- data.frame(matrix(ncol=length(features)+3,nrow=203))
+cols <- c('hotelURL','hotelID','hotelNames',features)
+colnames(features_df) <- cols
+features_df[,] <- 0
+
+# For each hotel html, extract amenities and fill in the amenities matrix: 1 if present
+rowcounter=0
+features_counter=0
+
+for(i in links[1:length(links)]){
+  
+  amenities <- NULL
+  Sys.sleep(0.2)
+  page <- getHTML(i)
+  page <- read_html(page, options = "HUGE")
+  amenities <- page %>% html_elements('.facilityDesc') %>% html_text()
+  rowcounter=rowcounter+1
+  amenities <- t(amenities)
+  features_df[rowcounter,1] <- i
+  # Reset feature counter
+  features_counter <- 4
+  for(j in colnames(features_df[4:158])){
+    for(k in amenities[1:length(amenities)]){
+      if(j==k)
+        features_df[rowcounter, features_counter] <- 1
+    }
+    features_counter=features_counter+1
+  }
+}
+
+# padding both ends of the matrix with hotel IDs and hotel names
+hotelID <- str_match(features_df$hotelURL,".*?hotelId=(.*).*?")
+features_df$hotelID <- hotelID[,2]
+
+hotelNames1 <- hotelNames
+hotelNames1$location <- NULL
+features_df <- left_join(x=features_df,y=hotelNames1,by="hotelID")
+features_df$hotelNames.x <- features_df$hotelNames.y
+
+# Extract as csv
+write.csv(features_df,"amenitiesMatrix.csv")
+```
+
+</details>
+
+### DATA PREPARATION
+After mining each data, we realized the that the data sets are not usable for our analysis. Hence, we did the following: 
+
+<details>
+<summary>1.  Hotel Information Data</summary>
+To get more hotels around Singapore, we used the idea of web scrapping to "scrap" surrounding hotels of hotel ID generated from the master hotel list (trip_com_HOTEL_ID.xlsx). Using an API call to get the hotels information, there is a possibility that we will be scrapping similar hotels given if the master hotel list contains hotels that are nearby each other. 
+
+However, by doing so, there is a possibility that we will scrap similar hotels 
+
+As we are retrieving near by hotels of 
+
+hotels populated from trip_com_HOTEL_ID.xlsx, we found out that the is a high chances of mining the same hotel given if the hotel is close by each other. Hence we had to remove duplicated hotel ID after mining. The code is shown below: 
+
+```{r warning = FALSE, message = FALSE}
+# Before removal of duplicates
+hotel_price_check <- read.csv("hotel_info_list.csv", na.strings = "Nan")
+print(paste0("Count before removal of duplicates: ", count(hotel_price_check)))
+
+# After removal of duplicates manually
+hotel_price_check <- hotel_price_check[!duplicated(hotel_price_check$hotelId), ]
+print(paste0("Count after removal of duplicates: ", count(hotel_price_check)))
+```
+
+```{r eval=FALSE}
+# Extract as csv
+write.csv(hotel_price_check,"hotel_master_data_cleaned.csv")
+```
+
+</details>
+
+<details>
+<summary>2.  Hotel Amenities Data</summary>
+For our analysis, we will need to engineer 1 additional columns to the amenities table - location. To engineer the column, we used the location gathered from hotel_price_check to determine the location of the hotels. The code is shown below: 
+
+```{r warning = FALSE, message = FALSE}
+# Location
+master_hotel_id <- read.csv("hotel_master_data_cleaned.csv", na.strings = "Nan")
+hotel_amenities <- read.csv("amenitiesMatrix.csv", na.strings = "Nan")
+master_hotel_id < master_hotel_id$hotelId
+
+balestier <- unique(subset(master_hotel_id, location == "Balestier")$hotelId)
+bugis <- unique(subset(master_hotel_id, location == "Bugis")$hotelId)
+chinatown <- unique(subset(master_hotel_id, location == "Chinatown")$hotelId)
+eastCoast <- unique(subset(master_hotel_id, location == "East Coast")$hotelId)
+geylang <- unique(subset(master_hotel_id, location == "Geylang")$hotelId)
+habourfront <- unique(subset(master_hotel_id, location == "Harbourfront")$hotelId)
+jurong <- unique(subset(master_hotel_id, location == "Jurong")$hotelId)
+kallang <- unique(subset(master_hotel_id, location == "Kallang")$hotelId)
+lavender <- unique(subset(master_hotel_id, location == "Lavender")$hotelId)
+littleIndia <- unique(subset(master_hotel_id, location == "Little India")$hotelId)
+marinaBay <- unique(subset(master_hotel_id, location == "Marina Bay")$hotelId)
+orchardRoad <- unique(subset(master_hotel_id, location == "Orchard Road")$hotelId)
+queenstown <- unique(subset(master_hotel_id, location == "Queenstown")$hotelId)
+sentosa <- unique(subset(master_hotel_id, location == "Sentosa Island")$hotelId)
+serangoon <- unique(subset(master_hotel_id, location == "Serangoon")$hotelId)
+changiAirportRegion <- unique(subset(master_hotel_id, location == "Singapore Changi Airport Region")$hotelId)
+sinRiver <- unique(subset(master_hotel_id, location == "Singapore River")$hotelId)
+westCoast <- unique(subset(master_hotel_id, location == "West Coast")$hotelId)
+
+hotel_amenities <- mutate(hotel_amenities, hotelLocation = ifelse(HotelID %in% balestier, "Balestier",
+                    ifelse(HotelID %in% bugis, "Bugis",
+                   ifelse(HotelID %in% chinatown, "Chinatown",
+                  ifelse(HotelID %in% eastCoast, "East Coast",
+                 ifelse(HotelID %in% geylang, "Geylang",
+                ifelse(HotelID %in% habourfront, "Harbourfront",
+               ifelse(HotelID %in% jurong, "Jurong",
+              ifelse(HotelID %in% kallang, "Kallang",
+             ifelse(HotelID %in% lavender, "Lavender",
+            ifelse(HotelID %in% littleIndia, "Little India",
+             ifelse(HotelID %in% marinaBay, "Marina Bay",
+              ifelse(HotelID %in% orchardRoad, "Orchard Road",
+               ifelse(HotelID %in% queenstown, "Queenstown",
+                ifelse(HotelID %in% sentosa, "Sentosa Island",
+                 ifelse(HotelID %in% serangoon, "Serangoon",
+                  ifelse(HotelID %in% changiAirportRegion, "Singapore Changi Airport Region",
+                   ifelse(HotelID %in% sinRiver, "Singapore River",
+                    ifelse(HotelID %in% westCoast, "West Coast", "NA")))))))))))))))))))
+
+hotel_amenities <- hotel_amenities[!grepl("NA", hotel_amenities$hotelLocation, fixed = TRUE), ]
+head(hotel_amenities)
+```
+
+```{r eval=FALSE}
+# Extract as csv
+write.csv(hotel_amenities,"amenitiesMatrix_cleaned.csv")
+```
+
+</details>
+
+<details>
+
+<summary>3.  Hotel Price Data</summary>
+
++ After mining the data, we realized that there were multiple prices being mined for a single hotel. Hence, we decided to keep the minimum price of each hotel. To ensure that there are no duplicated records after insertion, we used the unique function to remove any duplicated records. The code is shown below:  
+
+```{r eval=FALSE}
+# Extracting only the min price
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687463] <- 223
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687485] <- 398
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687486] <- 94
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687490] <- 657
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687509] <- 112
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687572] <- 112
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687761] <- 126
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687791] <- 78
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687796] <- 636
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687808] <- 79
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 687812] <- 131
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 712600] <- 543
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 905760] <- 363
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 909897] <- 352
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 909901] <- 340
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 928266] <- 215
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 932167] <- 768
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 962739] <- 765
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 965250] <- 742
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 989485] <- 164
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 989578] <- 67
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 991874] <- 248
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 992740] <- 498
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 994990] <- 353
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995003] <- 418
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995019] <- 330
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995031] <- 106
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995051] <- 430
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995053] <- 530
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995077] <- 188
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996039] <- 242
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996045] <- 241
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996048] <- 633
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996049] <- 492
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996052] <- 1304
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996053] <- 676
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996302] <- 235
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996304] <- 233
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996310] <- 640
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996320] <- 524
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996324] <- 446
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996327] <- 208
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996340] <- 505
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 996342] <- 298
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 998518] <- 178
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 998539] <- 144
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 998612] <- 560
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1005152] <- 193
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1048889] <- 565
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1115349] <- 263
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1172034] <- 215
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1308129] <- 600
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1359681] <- 150
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1595036] <- 494
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1619617] <- 127
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1620002] <- 87
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1706908] <- 705
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1725985] <- 36
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1869381] <- 271
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 1882960] <- 185
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 2064004] <- 153
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 2377341] <- 181
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 2510063] <- 93
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 4065387] <- 231
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 4397252] <- 176
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 4439330] <- 69
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 4600894] <- 82
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 4715430] <- 340
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 6401620] <- 574
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 7042701] <- 173
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 7301503] <- 94
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 8497129] <- 371
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 8695392] <- 237
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 10031649] <- 132
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 10231080] <- 214
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 10930412] <- 220
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 11491662] <- 750
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 23790149] <- 74
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 23967152] <- 153
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 23987578] <- 50
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 25467000] <- 459
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 28870957] <- 85
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 31212318] <- 371
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 40611447] <- 167
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 44320758] <- 318
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 47626297] <- 302
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 49354410] <- 173
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 50040639] <- 156
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 53481177] <- 179
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 67727971] <- 224
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 68057612] <- 360
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 68173444] <- 125
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 70971166] <- 48
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 71906273] <- 70
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 76519504] <- 112
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 77698028] <- 121
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 79568182] <- 199
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 80508014] <- 315
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 82699791] <- 242
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 91633420] <- 378
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 97209990] <- 161
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995072] <- 217
+df_hotel_prices$pricePerNight[df_hotel_prices$hotelId == 995082] <- 677
+df_hotel_prices <- unique(df_hotel_prices)
+```
+
++ For our analysis, we will need to engineer 3 additional columns to the price table - price classification, the day of the check in date, and the location. As for the price classification, we have plotted a boxplot and used the summary function to understand the price range of all 203 hotels. Once we have determined the range, we are able to classify the prices base on the percentiles. In addition, we used the location gathered from hotel_price_check to determine the location of the hotels. The code is shown below:  
+
+```{r warning = FALSE, message = FALSE}
+# Price Classification
+# Finding the range of values so I can determine the price classification 
+hotel_price <- read.csv("hotel_prices.csv", na.strings = "Nan")
+ggplot(hotel_price, aes(y=pricePerNight)) + geom_boxplot()
+summary(hotel_price$pricePerNight)
+
+# Categorizing the prices
+hotel_price <- mutate(hotel_price, priceClass = ifelse(pricePerNight <= 110 , "Low",
+                                             ifelse(pricePerNight > 110 &  pricePerNight < 378 , "Medium", "High")))
+
+head(hotel_price)
+```
+
+```{r warning = FALSE, message = FALSE}
+# Day
+hotel_price <- mutate(hotel_price, day = weekdays(as.Date(checkInDate)))
+head(hotel_price)
+```
+
+```{r warning = FALSE, message = FALSE}
+# Location
+master_hotel_id <- read.csv("hotel_master_data_cleaned.csv", na.strings = "Nan")
+master_hotel_id < master_hotel_id$hotelId
+
+balestier <- unique(subset(master_hotel_id, location == "Balestier")$hotelId)
+bugis <- unique(subset(master_hotel_id, location == "Bugis")$hotelId)
+chinatown <- unique(subset(master_hotel_id, location == "Chinatown")$hotelId)
+eastCoast <- unique(subset(master_hotel_id, location == "East Coast")$hotelId)
+geylang <- unique(subset(master_hotel_id, location == "Geylang")$hotelId)
+habourfront <- unique(subset(master_hotel_id, location == "Harbourfront")$hotelId)
+jurong <- unique(subset(master_hotel_id, location == "Jurong")$hotelId)
+kallang <- unique(subset(master_hotel_id, location == "Kallang")$hotelId)
+lavender <- unique(subset(master_hotel_id, location == "Lavender")$hotelId)
+littleIndia <- unique(subset(master_hotel_id, location == "Little India")$hotelId)
+marinaBay <- unique(subset(master_hotel_id, location == "Marina Bay")$hotelId)
+orchardRoad <- unique(subset(master_hotel_id, location == "Orchard Road")$hotelId)
+queenstown <- unique(subset(master_hotel_id, location == "Queenstown")$hotelId)
+sentosa <- unique(subset(master_hotel_id, location == "Sentosa Island")$hotelId)
+serangoon <- unique(subset(master_hotel_id, location == "Serangoon")$hotelId)
+changiAirportRegion <- unique(subset(master_hotel_id, location == "Singapore Changi Airport Region")$hotelId)
+sinRiver <- unique(subset(master_hotel_id, location == "Singapore River")$hotelId)
+westCoast <- unique(subset(master_hotel_id, location == "West Coast")$hotelId)
+
+hotel_price <- mutate(hotel_price, hotelLocation = ifelse(hotelId %in% balestier, "Balestier",
+                    ifelse(hotelId %in% bugis, "Bugis",
+                   ifelse(hotelId %in% chinatown, "Chinatown",
+                  ifelse(hotelId %in% eastCoast, "East Coast",
+                 ifelse(hotelId %in% geylang, "Geylang",
+                ifelse(hotelId %in% habourfront, "Harbourfront",
+               ifelse(hotelId %in% jurong, "Jurong",
+                ifelse(hotelId %in% kallang, "Kallang",
+               ifelse(hotelId %in% lavender, "Lavender",
+              ifelse(hotelId %in% littleIndia, "Little India",
+             ifelse(hotelId %in% marinaBay, "Marina Bay",
+              ifelse(hotelId %in% orchardRoad, "Orchard Road",
+               ifelse(hotelId %in% queenstown, "Queenstown",
+                ifelse(hotelId %in% sentosa, "Sentosa Island",
+                 ifelse(hotelId %in% serangoon, "Serangoon",
+                  ifelse(hotelId %in% changiAirportRegion, "Singapore Changi Airport Region",
+                   ifelse(hotelId %in% sinRiver, "Singapore River",
+                    ifelse(hotelId %in% westCoast, "West Coast", "NA")))))))))))))))))))
+
+hotel_price <- hotel_price[!grepl("NA", hotel_price$hotelLocation, fixed = TRUE), ]
+head(hotel_price)
+```
+
+```{r eval=FALSE}
+# Extract as csv
+write.csv(hotel_price,"hotel_price_data_cleaned.csv")
+```
+
+</details>
+
+<details>
+<summary>4.  Surrounding Places Of Interest Per Hotel Data</summary>
+
+* After mining the data, we notice that some places of interest are listed as Chinese characters. Hence we googled the terms and replace them. The code is shown below: 
+
+```{r eval=FALSE}
+df_places_info$placeName[df_places_info$placeName == "新加坡普陀寺"] <- "The Poh Toh Si Temple"
+df_places_info$placeName[df_places_info$placeName == "新加坡河驳船游"] <- "Boat Quay "
+df_places_info$placeName[df_places_info$placeName == "旋转飞盘（科幻城市）"] <- "Universal Studio Singapore"
+df_places_info$placeName[df_places_info$placeName == "海马游乐池"] <- "Adventure Cove Waterpark"
+df_places_info$placeName[df_places_info$placeName == "港湾第二大厦"] <- "Imbiah Lookout"
+df_places_info$placeName[df_places_info$placeName == "草根书室"] <- "Grassroots Book Room"
+```
+
+```{r eval=FALSE}
+# Extract as csv
+write.csv(df_places_info,"places_of_interest_cleaned.csv")
+```
+
+</details>
+
+### DATA EXPLORATION 
+With the cleaned and transformed data, we will be performing the above mentioned analyses: 
+
+1. Hotel attributes that attracts booking
+2. Driving factors determining hotel prices
+3. Guest type and their booking behavior
+
+
+### ANALYSIS
+
+
+
+### CONCLUSION
+
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

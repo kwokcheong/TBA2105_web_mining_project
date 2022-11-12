@@ -1,3 +1,4 @@
+set.seed(1)
 library(ggplot2)
 library(httr)
 library(tibble)
@@ -9,6 +10,8 @@ library("writexl")
 library(rvest)
 library(recommenderlab)
 library(dplyr)
+library(magrittr)
+library(pander)
 #setwd("~/Desktop/projects/TBA2105_web_mining_project")
 # Initialize an empty data frame
 df_hotel_info <- data.frame(matrix(ncol=10, nrow=0))
@@ -374,12 +377,13 @@ SVD_recommendations %>% as("list")
 
 #multiple algorithms
 #POPULAR based on item popularity
-scheme = evaluationScheme(mat_reduced_data, method="cross-validation",k=4, given=-1, goodRating=5)
-
+set.seed(1)
+scheme = evaluationScheme(mat_reduced_data, method="cross-validation",
+                           k=4, given=-1, goodRating=5)
 algorithms = list(
   "popular items" = list(name="POPULAR"),
-  "svd" = list(name="SVD"),
-  "item-based CF" = list(name="IBCF")
+  "item-based CF" = list(name="IBCF"),
+  "SVD" = list(name="SVDF")
 )
 
 
@@ -387,6 +391,7 @@ results = evaluate(scheme, method=algorithms, type="topNList", n=c(1,3,5,10,15,2
 
 plot(results, annotate=T)
 
+# error data
 ev = evaluationScheme(mat_reduced_data, method="split",train=0.9, given=-1, goodRating=5)
 
 r1 = Recommender(getData(ev, "train"), method = "SVD")
