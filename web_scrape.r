@@ -273,7 +273,18 @@ hotel_master_data = read.csv("hotel_info_list.csv")
 user_id_list = unique(user_data$userId_cleaned)
 hotel_id_list = unique(hotel_master_data$hotelId)
 hotel_name_list = unique(hotel_master_data$hotelName)
-                  
+
+# Cleaning hotel master data 
+# Remove duplicated hotels
+
+length(hotel_master_data$hotelId)
+length(unique(hotel_master_data$hotelId))
+
+hotel_master_data_cleaned <- hotel_master_data[!duplicated(hotel_master_data$hotelId), ]
+write.csv(hotel_master_data_cleaned,"hotel_master_data_cleaned.csv", row.names = FALSE)
+
+hotel_master_data = read.csv("hotel_master_data_cleaned.csv")
+
 # Create matrix user to hotel id with rating all < This will be the first approach 
 mat <- matrix(0,
               ncol = length(hotel_id_list), 
@@ -332,7 +343,6 @@ SVD_recommendations %>% as("list")
 
 
 # Next up : Evaluation 
-
 
 #multiple algorithms
 #POPULAR based on item popularity
