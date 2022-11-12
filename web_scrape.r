@@ -350,7 +350,8 @@ scheme = evaluationScheme(mat_data, method="cross-validation",k=4, given=1, good
 
 algorithms = list(
   "popular items" = list(name="POPULAR"),
-  "user-based CF" = list(name="UBCF", param=list(normalize="Z-score", nn=50)),
+  "svd" = list(name="SVD"),
+  "user-based CF" = list(name="UBCF"),
   "item-based CF" = list(name="IBCF")
 )
 
@@ -362,13 +363,17 @@ plot(results, annotate=T)
 
 ev = evaluationScheme(mat_data, method="split",train=0.9, given=1, goodRating=5)
 
-r1 = Recommender(getData(ev, "train"), method = "UBCF")
+r1 = Recommender(getData(ev, "train"), method = "SVD")
 r2 = Recommender(getData(ev, "train"), method = "IBCF")
+r3 = Recommender(getData(ev, "train"), method = "POPULAR")
 p1 = predict(r1, getData(ev, "known"), type="ratings")
 p2 = predict(r2, getData(ev, "known"), type="ratings")
+p3 = predict(r3, getData(ev, "known"), type="ratings")
+
 error = rbind(
-  #UBCF = calcPredictionAccuracy(p1, getData(e, "unknown")),
-  IBCF = calcPredictionAccuracy(p2, getData(ev, "unknown"))
+  SVD = calcPredictionAccuracy(p1, getData(ev, "unknown")),
+  IBCF = calcPredictionAccuracy(p2, getData(ev, "unknown")),
+  POPULAR = calcPredictionAccuracy(p3, getData(ev, "unknown"))
 )
 error
 
