@@ -298,6 +298,8 @@ shuffle <- sample(nrow(mat))
 mat <- mat[shuffle,]
 colnames(mat) <- hotel_name_list
 
+# Explore Dimensional Reduction using SVD
+
 test <- mat[1:10,]
 train <- mat[11:nrow(mat),]
 
@@ -311,7 +313,7 @@ UBCF_recommendations <- predict(model, test, type="ratingMatrix")
 UBCF_recommendations %>% as("matrix") %>% View()
 
 UBCF_recommendations <- predict(model, test)
-UBCF_recommendations %>% as("list") %>% View()
+UBCF_recommendations %>% as("list")
 
 
 model2 <- Recommender(train, method = "IBCF")
@@ -319,18 +321,26 @@ IBCF_recommendations <- predict(model2, test, type="ratingMatrix")
 IBCF_recommendations %>% as("matrix") %>% View()
 
 IBCF_recommendations <- predict(model2, test, n=3)
-IBCF_recommendations %>% as("list") %>% View()
+IBCF_recommendations %>% as("list") 
+
+model <- Recommender(train, method = "SVD")
+SVD_recommendations <- predict(model, test, type="ratingMatrix")
+SVD_recommendations %>% as("matrix") %>% View()
+
+SVD_recommendations <- predict(model, test)
+SVD_recommendations %>% as("list") 
 
 
 # Next up : Evaluation 
 
+
 #multiple algorithms
 #POPULAR based on item popularity
-scheme = evaluationScheme(mat_data, method="cross-validation",
-                           k=4, given=-1, goodRating=5)
+scheme = evaluationScheme(mat_data, method="cross-validation",k=4, given=1, goodRating=5)
 
 algorithms = list(
-  "user-based CF" = list(name="UBCF"),
+  "popular items" = list(name="POPULAR"),
+  "user-based CF" = list(name="UBCF", param=list(normalize="Z-score", nn=50)),
   "item-based CF" = list(name="IBCF")
 )
 
@@ -340,5 +350,22 @@ results
 
 plot(results, annotate=T)
 
+ev = evaluationScheme(mat_data, method="split",train=0.9, given=1, goodRating=5)
 
+r1 = Recommender(getData(ev, "train"), method = "UBCF")
+r2 = Recommender(getData(ev, "train"), method = "IBCF")
+p1 = predict(r1, getData(ev, "known"), type="ratings")
+p2 = predict(r2, getData(ev, "known"), type="ratings")
+error = rbind(
+  #UBCF = calcPredictionAccuracy(p1, getData(e, "unknown")),
+  IBCF = calcPredictionAccuracy(p2, getData(ev, "unknown"))
+)
+error
 
+scheme1 = evaluationScheme(mat_data, method="cross-validation", k=4, given=1, goodRating=5)
+results1 = evaluate(scheme1, method="IBCF", type="topNList", n=c(1,3,5,10,15,20))
+#generate the confusion matrix
+getConfusionMatrix(results1)[[1]]
+#plot the ROC curve
+plot(results1)
+     
