@@ -230,12 +230,10 @@ library(readr)
 library(dplyr)
 library(lubridate)
 library(readxl)
-library(stringr)
-library(httr)
-library(rvest)
 library(tm)
 library(wordcloud)
 library(RColorBrewer)
+library(tm)
 
 # Initialize an empty data frame
 df_hotel_info <- data.frame(matrix(ncol=10, nrow=0))
@@ -1228,24 +1226,292 @@ With the cleaned and transformed data, we will be performing the above mentioned
 3. Guest type and their booking behavior
 
 
-### ANALYSIS
+### RECOMMENDER SYSTEM
 
+#### RECOMMENDER SYSTEM: CONTENT BASED
+
+From the Users’ Review, only overall ratings above 4.5 were selected. The
+assumption is that users who gave these ratings liked the hotel because of the
+amenities available
+```{r error=FALSE, message=FALSE, warning=FALSE}
+features_df <- read.csv("amenitiesMatrix.csv")
+# users' reviews dataset 
+hotelsReviews <- read.csv("workfile_user_review_data.csv")
+userProfile <- unique(hotelsReviews)  # double checking no duplicates
+userProfile$userId <- NULL
+userProfile$content <- NULL
+userProfile$checkinDate <- NULL
+
+# find number of unique users in the User Review Data base
+uniqueUsers <- unique(userProfile$userId_cleaned)
+
+# select only hotels with ratings of >4.5 Assumption is that users like the amenities offered by these hotels
+userProfile <- userProfile %>% filter(ratingAll >4.5) 
+```
+
+A profile is then built for a selected user – i.e. selecting all the hotels the particular
+user gave a rating of 4.5 or more
+For instance for user with User ID of “_AP359560”
+```{r error=FALSE, message=FALSE, warning=FALSE}
+# manually examine user reviews data set to extract hotel preferences of users
+# manually change user ID
+user="_AP359560"
+
+userProfile1 <- userProfile %>% filter(userProfile$userId_cleaned == user)
+
+#extract hotel IDs from UserProfile1, select rows from amentities matrix
+
+userPref <- as.data.frame(NULL)
+j <- 1
+for(k in userProfile1$hotelID){
+  
+  k <- features_df[features_df$HotelID==userProfile1$hotelID[j],]
+  #print(t(k))
+  j <- j+1
+  userPref <- rbind(userPref,k)
+  
+}
+
+
+userPrefMatrix <- userPref[,5:159]
+featuresMatrix <- features_df[,5:159] 
+rownames(featuresMatrix) <- features_df$HotelID
+```
+
+The rows in the User Profile are then condensed into a single row to feed into the
+recommender model later, userTest is now a single line of amenities favoured by the user.
+```{r error=FALSE, message=FALSE, warning=FALSE}
+#condenses preferences of user into a single row to feed into recommander model
+userTest <- apply(userPrefMatrix,2,sum)
+userTest <- as.numeric(userTest)
+userTest <- as.data.frame(t(ceiling(userTest/nrow(userPrefMatrix))))
+```
+
+To obtain the ‘training data’, the hotels in the User Profile is removed from the
+amenities matrix
+```{r error=FALSE, message=FALSE, warning=FALSE}
+# remove hotel IDs from featursMatrix containing hotel IDs of userPref
+j <-1
+for(h in userProfile1$hotelID){
+  
+  index <- which(rownames(featuresMatrix)==as.character(h))
+  featuresMatrix <- featuresMatrix[-c(index),]
+
+  j <- j+1
+}
+```
+
+A correlation table is then built by performing similarity testing between the userTest
+and the individual rows in the amenities matrix. The table is then sorted to reveal the
+top 10 hotels recommended to this particular user.
+```{r error=FALSE, message=FALSE, warning=FALSE}
+#define dataframe of cor coefficients between the user test and individual hotels
+
+corTable <- data.frame(hotelID=as.character(), corCoeff=as.numeric())
+
+
+for(r in rownames(featuresMatrix)){
+  train <- featuresMatrix[r,] # individual row from featuresMatrix
+  corRow <- c(r, cor(as.numeric(train),as.numeric(userTest))) #perform similarity test 
+  corTable <- rbind(corTable,corRow)
+}
+
+# sort corTable
+corTable <- corTable[order(corTable$corrCoeff,decreasing = TRUE),]
+colnames(corTable) <- c("hotelID","corrCoeff")
+
+corTable <- inner_join(corTable,hotelNames)
+
+print(corTable$hotelNames[1:10])
+
+```
+
+#### RECOMMENDER SYSTEM: RATING BASED
+
+Let us create a recommender system to help recommend hotels for users. First, we will need to create the matrix where the user is the row-names and hotels is the col-names. 
+```{r error=FALSE,message=FALSE,warning=FALSE}
+# Read csv 
+user_data = read.csv("workfile_user_review_data.csv")
+hotel_master_data = read.csv("hotel_master_data_cleaned.csv")
+
+user_id_list = unique(user_data$userId_cleaned)
+hotel_id_list = unique(hotel_master_data$hotelId)
+hotel_name_list = unique(hotel_master_data$hotelName)
+
+
+# Create matrix user to hotel id with rating all < This will be the first approach 
+mat <- matrix(0,
+              ncol = length(hotel_id_list), 
+              nrow = length(user_id_list)
+              )
+colnames(mat) <- hotel_id_list
+rownames(mat) <- user_id_list
+
+for(i in 1:nrow(user_data)){ 
+ hotel_index =  which(hotel_id_list == user_data[i,]$hotelId )
+ user_index = which(user_id_list == user_data[i,]$userId_cleaned)
+ mat[user_index,hotel_index] <- user_data[i,]$ratingAll
+}
+
+mat[mat==0] <- NA
+```
+
+
+We discovered that our matrix is quite sparse and that could affect our recommender models. Hence we will try to reduce the dimensions of our matrix by removing user rows that only provided 2 or less hotel reviews. 
+This would reduce our matrix row size from 12063 to 446.
+
+We can further reduce the dimensions by removing hotels that have no ratings at all. We can effectively reduce the column size from 203 to 189 hotels. 
+
+Lastly, we will need to shuffle the matrix so that when we split the matrix to test and train matrix, it will not introduce any bias.
+```{r error=FALSE,message=FALSE,warning=FALSE}
+# Create another matrix but this time with reduced dimensions, we will reduce the number of users. 
+no_of_NAs <- rowSums(is.na(mat))
+no_of_Reviews <- 203 - rowSums(is.na(mat))
+no_of_Reviews <- as.data.frame(no_of_Reviews)
+
+# if we go for >2 there will be 932 records , >3 = 446, >4 = 257 , > 5 = 151
+length(no_of_Reviews[no_of_Reviews$no_of_Reviews > 3,]) # 151
+
+no_of_Reviews_vector <- as.vector(no_of_Reviews)
+no_of_Reviews_vector <- no_of_Reviews_vector$no_of_Reviews
+no_of_Reviews_vector <- no_of_Reviews_vector > 3
+
+mat_reduced <- mat[no_of_Reviews_vector,]
+nrow(mat_reduced)
+
+# Shuffle the matrix
+set.seed(41)
+shuffle <- sample(nrow(mat))
+shuffle2 <- sample(nrow(mat_reduced))
+mat <- mat[shuffle,]
+mat_reduced <- mat_reduced[shuffle2, ]
+colnames(mat) <- hotel_name_list
+colnames(mat_reduced) <- hotel_name_list
+
+# for mat reduced, we can futher reduce by removing hotels with no ratings
+ncol(mat_reduced)
+mat_reduced <- mat_reduced[ , -which( colSums(is.na(mat_reduced)) == nrow(mat_reduced)) ]
+ncol(mat_reduced) # 189 hotels left 
+
+```
+
+We will now create test and train matrix, by taking the first 10 users to be test while the rest is used for training the model. We will also need to convert the data to realRatingMatrix so that it can be used by the recommenderLab package. 
+```{r error=FALSE,message=FALSE,warning=FALSE}
+
+test <- mat[1:10,]
+train <- mat[11:nrow(mat),]
+
+test2 <- mat_reduced[1:10,]
+train2 <- mat_reduced[11:nrow(mat_reduced),]
+
+# convert to realRatingMatrix format
+mat_data <- mat %>% as("matrix")  %>% as("realRatingMatrix")
+test <- test %>% as("matrix")  %>% as("realRatingMatrix")
+train <- train %>% as("matrix")  %>% as("realRatingMatrix")
+
+mat_reduced_data <- mat_reduced %>% as("matrix")  %>% as("realRatingMatrix")
+test2 <- test2 %>% as("matrix")  %>% as("realRatingMatrix")
+train2 <- train2 %>% as("matrix")  %>% as("realRatingMatrix")
+
+
+```
+
+Now we can perform the actual modelling. We will be creating 4 different models, the RANDOM, IBCF, SVD and POPULAR.
+We have skipped out on UBCF in favor of IBCF because IBCF works better in our case. A hotel will always be the same hotel - it doesn't change. 
+User's preference for hotels may change. Also, there are much fewer hotels than users, meaning less computation to perform and faster results. 
+
+The output is a list of hotels recommended for the test users. 
+
+Based on the output, it would seem that SVD and POPULAR has recommended the same few hotels to the same group of people. This leads us to question the reliability of the results from SVD and POPULAR as it does not provide meaningful recommendations for our users. 
+
+Based on the results, only RANDOM and IBCF provided recommendations which were unique to each user. We can dig deeper into the performance of these two models. 
+```{r error=FALSE,message=FALSE,warning=FALSE}
+model <- Recommender(train2, method = "RANDOM")
+RANDOM_recommendations <- predict(model, test2, n=3)
+RANDOM_recommendations %>% as("list")
+
+model2 <- Recommender(train2, method = "IBCF")
+IBCF_recommendations <- predict(model2, test2, n=10)
+IBCF_recommendations %>% as("list") 
+
+model3 <- Recommender(train2, method = "SVD")
+SVD_recommendations <- predict(model3, test2, n=10)
+SVD_recommendations %>% as("list") 
+
+model4 <- Recommender(train2, method = "POPULAR")
+POP_recommendations <- predict(model4, test2, n=10)
+POP_recommendations %>% as("list") 
+```
+
+To understand the performance of our recommender systems, we will need to evaluate the effectiveness of the models through cross validation. Below is the ROC curve plotted for all 4 different models.
+We can see that IBCF performed the best compared to the other 3 models. With SVD and Random performing the worst. 
+At FPR at 0.05, IBCF returned about 0.15 TPR, which is the best result compared to other models.
+
+We should also understand the speed of the model as it is one of the indicators of performance. 
+POPULAR took a fast time to create the model but took a 28 times longer time to predict the results.
+IBCF took the longest time to model but the fastest time to predict among the other models. 
+SVD took a relatively fast time to model and about the same time to predict the results. 
+RANDOM was the fastest for both modelling and prediction. 
+
+```{r error=FALSE,message=FALSE,warning=FALSE}
+
+# Next up : Evaluation 
+
+#multiple algorithms
+#POPULAR based on item popularity
+set.seed(15) # 7 15
+scheme = evaluationScheme(mat_reduced_data, method="cross-validation",
+                           k=4, given=-1, goodRating=5)
+algorithms = list(
+  "popular items" = list(name="POPULAR"),
+  "item-based CF" = list(name="IBCF"),
+  "SVD" = list(name="SVD"),
+  "RANDOM" = list(name="RANDOM")
+)
+
+results = evaluate(scheme, method=algorithms, type="topNList", n=c(1,3,5,10,15,20))
+
+plot(results, annotate=T)
+
+```
+
+We can also find the prediction accuracy using the RMSE, MSE and MAE results. 
+Based on the results, RANDOM had the worst RMSE MSE and MAE scores followed by IBCF. 
+SVD and POPULAR produced similar results. But as we recall, both models produced the same recommendation for all users and is deemed unmeaningful, hence IBCF is the best out of all the models.
+```{r error=FALSE,message=FALSE,warning=FALSE}
+# error data
+set.seed(15)
+ev = evaluationScheme(mat_data, method="split",train=0.9, given=-1, goodRating=5)
+
+r1 = Recommender(getData(ev, "train"), method = "SVD")
+r2 = Recommender(getData(ev, "train"), method = "IBCF")
+r3 = Recommender(getData(ev, "train"), method = "POPULAR")
+r4 = Recommender(getData(ev, "train"), method = "RANDOM")
+p1 = predict(r1, getData(ev, "known"), type="ratings")
+p2 = predict(r2, getData(ev, "known"), type="ratings")
+p3 = predict(r3, getData(ev, "known"), type="ratings")
+p4 = predict(r4, getData(ev, "known"), type="ratings")
+
+error = rbind(
+  SVD = calcPredictionAccuracy(p1, getData(ev, "unknown")),
+  IBCF = calcPredictionAccuracy(p2, getData(ev, "unknown")),
+  POPULAR = calcPredictionAccuracy(p3, getData(ev, "unknown")),
+  RANDOM = calcPredictionAccuracy(p4, getData(ev, "unknown"))
+)
+error
+```
+
+
+Since we have came to the conclusion that IBCF performed the best out of the 4 models, we can dive deeper to analyse the Precision Recall score for the IBCF. Based on the results, while the precision recall for the first recommendation had poor results, subsequent recommendations performed relatively better. With the highest recall score being 0.35.
+```{r error=FALSE,message=FALSE,warning=FALSE}
+set.seed(15)
+scheme1 = evaluationScheme(mat_reduced_data, method="cross-validation", k=4, given=-1, goodRating=5)
+results1 = evaluate(scheme1, method="IBCF", type="topNList", n=c(1,3,5,10,15,20))
+#generate the confusion matrix
+getConfusionMatrix(results1)[[1]]
+```
 
 
 ### CONCLUSION
 
 
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

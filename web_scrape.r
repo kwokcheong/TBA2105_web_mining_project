@@ -350,42 +350,46 @@ mat_reduced_data <- mat_reduced %>% as("matrix")  %>% as("realRatingMatrix")
 test2 <- test2 %>% as("matrix")  %>% as("realRatingMatrix")
 train2 <- train2 %>% as("matrix")  %>% as("realRatingMatrix")
 
-model <- Recommender(train2, method = "UBCF")
+model <- Recommender(train2, method = "RANDOM")
 UBCF_recommendations <- predict(model, test2, type="ratingMatrix")
 UBCF_recommendations %>% as("matrix") %>% View()
 
-UBCF_recommendations <- predict(model, test2)
+UBCF_recommendations <- predict(model, test2, n=3)
 UBCF_recommendations %>% as("list")
 
-
-model2 <- Recommender(train, method = "IBCF")
-IBCF_recommendations <- predict(model2, test, type="ratingMatrix")
+model2 <- Recommender(train2, method = "IBCF")
+IBCF_recommendations <- predict(model2, test2, type="ratingMatrix")
 IBCF_recommendations %>% as("matrix") %>% View()
 
-IBCF_recommendations <- predict(model2, test, n=3)
+IBCF_recommendations <- predict(model2, test2, n=3)
 IBCF_recommendations %>% as("list") 
 
-model <- Recommender(train, method = "SVD")
-SVD_recommendations <- predict(model, test, type="ratingMatrix")
+model3 <- Recommender(train2, method = "SVD")
+SVD_recommendations <- predict(model3, test2, type="ratingMatrix")
 SVD_recommendations %>% as("matrix") %>% View()
 
-SVD_recommendations <- predict(model, test)
+SVD_recommendations <- predict(model3, test2, n=10)
 SVD_recommendations %>% as("list") 
 
+model4 <- Recommender(train2, method = "POPULAR")
+POP_recommendations <- predict(model4, test2, type="ratingMatrix")
+POP_recommendations %>% as("matrix") %>% View()
 
+POP_recommendations <- predict(model4, test2, n=10)
+POP_recommendations %>% as("list") 
 # Next up : Evaluation 
 
 #multiple algorithms
 #POPULAR based on item popularity
-set.seed(1)
+set.seed(15) # 7 15
 scheme = evaluationScheme(mat_reduced_data, method="cross-validation",
                            k=4, given=-1, goodRating=5)
 algorithms = list(
   "popular items" = list(name="POPULAR"),
   "item-based CF" = list(name="IBCF"),
-  "SVD" = list(name="SVDF")
+  "SVD" = list(name="SVD"),
+  "RANDOM" = list(name="RANDOM")
 )
-
 
 results = evaluate(scheme, method=algorithms, type="topNList", n=c(1,3,5,10,15,20))
 
@@ -397,21 +401,25 @@ ev = evaluationScheme(mat_reduced_data, method="split",train=0.9, given=-1, good
 r1 = Recommender(getData(ev, "train"), method = "SVD")
 r2 = Recommender(getData(ev, "train"), method = "IBCF")
 r3 = Recommender(getData(ev, "train"), method = "POPULAR")
+r4 = Recommender(getData(ev, "train"), method = "RANDOM")
 p1 = predict(r1, getData(ev, "known"), type="ratings")
 p2 = predict(r2, getData(ev, "known"), type="ratings")
 p3 = predict(r3, getData(ev, "known"), type="ratings")
+p4 = predict(r4, getData(ev, "known"), type="ratings")
 
 error = rbind(
   SVD = calcPredictionAccuracy(p1, getData(ev, "unknown")),
   IBCF = calcPredictionAccuracy(p2, getData(ev, "unknown")),
-  POPULAR = calcPredictionAccuracy(p3, getData(ev, "unknown"))
+  POPULAR = calcPredictionAccuracy(p3, getData(ev, "unknown")),
+  RANDOM = calcPredictionAccuracy(p4, getData(ev, "unknown"))
 )
 error
 
+set.seed(15)
 scheme1 = evaluationScheme(mat_reduced_data, method="cross-validation", k=4, given=-1, goodRating=5)
 results1 = evaluate(scheme1, method="IBCF", type="topNList", n=c(1,3,5,10,15,20))
 #generate the confusion matrix
 getConfusionMatrix(results1)[[1]]
-#plot the ROC curve
-plot(results1)
+
+
      
