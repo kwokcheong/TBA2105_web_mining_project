@@ -234,6 +234,9 @@ library(tm)
 library(wordcloud)
 library(RColorBrewer)
 library(tm)
+library(recommenderlab)
+library(magrittr)
+library(pander)
 
 # Initialize an empty data frame
 df_hotel_info <- data.frame(matrix(ncol=10, nrow=0))
@@ -1236,37 +1239,7 @@ amenities available
 ```{r error=FALSE, message=FALSE, warning=FALSE}
 # users' reviews dataset 
 hotelsReviews <- read.csv("workfile_user_review_data.csv")
-
-# hotels info dataset
-hotelinfo <- read.csv("hotel_info_list.csv")
-
-# remove duplicates 268 -> 211
-hotels <- unique(hotelinfo)
-
-
-#remove cancellation tag as this is causing some duplicates 211 -> 204
-hotels$freeCancelTag <- NULL
-hotels <- unique(hotels)
-
-
-
-hotelNames <- cbind(hotels$hotelId, hotels$hotelName, hotels$location)
-colnames(hotelNames) <- c("hotelID","hotelNames","location")
-hotelNames <- as.data.frame(hotelNames)
-
-# remove one more duplicate 204->203
-hotelNames <- unique(hotelNames)
-
-
-# manually filling in missing location data
-hotelNames$location[hotelNames$hotelID=="712600"] <- "Chinatown"
-hotelNames$location[hotelNames$hotelID=="31212318"] <- "Chinatown"
-hotelNames$location[hotelNames$hotelID=="995050"] <- "Chinatown"
-hotelNames$location[hotelNames$hotelID=="1359681"] <- "Little India"
-hotelNames$location[hotelNames$hotelID=="687572"] <- "Tiong Bahru"
-
-# list of hotel ID for building vector of links 
-hotelIDList <- as.data.frame(hotelNames$hotelID)
+colnames(hotelsReviews)[1] <- "hotelID"
 features_df <- read.csv("amenitiesMatrix.csv")
 
 userProfile <- unique(hotelsReviews)  # double checking no duplicates
@@ -1285,8 +1258,6 @@ A profile is then built for a selected user – i.e. selecting all the hotels th
 user gave a rating of 4.5 or more
 For instance for user with User ID of “_AP359560”
 ```{r error=FALSE, message=FALSE, warning=FALSE}
-# manually examine user reviews data set to extract hotel preferences of users
-# manually change user ID
 user="_AP359560"
 
 userProfile1 <- userProfile %>% filter(userProfile$userId_cleaned == user)
@@ -1337,8 +1308,33 @@ A correlation table is then built by performing similarity testing between the u
 and the individual rows in the amenities matrix. The table is then sorted to reveal the
 top 10 hotels recommended to this particular user.
 ```{r error=FALSE, message=FALSE, warning=FALSE}
-#define dataframe of cor coefficients between the user test and individual hotels
+# hotels info dataset
+hotelinfo <- read.csv("hotel_info_list.csv")
 
+# remove duplicates 268 -> 211
+hotels <- unique(hotelinfo)
+
+
+#remove cancellation tag as this is causing some duplicates 211 -> 204
+hotels$freeCancelTag <- NULL
+hotels <- unique(hotels)
+
+
+
+hotelNames <- cbind(hotels$hotelId, hotels$hotelName, hotels$location)
+colnames(hotelNames) <- c("hotelID","hotelNames","location")
+hotelNames <- as.data.frame(hotelNames)
+
+# remove one more duplicate 204->203
+hotelNames <- unique(hotelNames)
+
+
+# manually filling in missing location data
+hotelNames$location[hotelNames$hotelID=="712600"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="31212318"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="995050"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="1359681"] <- "Little India"
+hotelNames$location[hotelNames$hotelID=="687572"] <- "Tiong Bahru"
 corTable <- data.frame(hotelID=as.character(), corCoeff=as.numeric())
 
 
@@ -1349,10 +1345,10 @@ for(r in rownames(featuresMatrix)){
 }
 
 # sort corTable
-corTable <- corTable[order(corTable$corrCoeff,decreasing = TRUE),]
 colnames(corTable) <- c("hotelID","corrCoeff")
-
 corTable <- inner_join(corTable,hotelNames)
+
+corTable <- corTable[order(corTable$corrCoeff,decreasing = TRUE),]
 
 print(corTable$hotelNames[1:10])
 
@@ -1513,7 +1509,7 @@ SVD and POPULAR produced similar results. But as we recall, both models produced
 ```{r error=FALSE,message=FALSE,warning=FALSE}
 # error data
 set.seed(15)
-ev = evaluationScheme(mat_data, method="split",train=0.9, given=-1, goodRating=5)
+ev = evaluationScheme(mat_reduced_data, method="split",train=0.9, given=-1, goodRating=5)
 
 r1 = Recommender(getData(ev, "train"), method = "SVD")
 r2 = Recommender(getData(ev, "train"), method = "IBCF")
