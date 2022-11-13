@@ -1234,9 +1234,41 @@ From the Users’ Review, only overall ratings above 4.5 were selected. The
 assumption is that users who gave these ratings liked the hotel because of the
 amenities available
 ```{r error=FALSE, message=FALSE, warning=FALSE}
-features_df <- read.csv("amenitiesMatrix.csv")
 # users' reviews dataset 
 hotelsReviews <- read.csv("workfile_user_review_data.csv")
+
+# hotels info dataset
+hotelinfo <- read.csv("hotel_info_list.csv")
+
+# remove duplicates 268 -> 211
+hotels <- unique(hotelinfo)
+
+
+#remove cancellation tag as this is causing some duplicates 211 -> 204
+hotels$freeCancelTag <- NULL
+hotels <- unique(hotels)
+
+
+
+hotelNames <- cbind(hotels$hotelId, hotels$hotelName, hotels$location)
+colnames(hotelNames) <- c("hotelID","hotelNames","location")
+hotelNames <- as.data.frame(hotelNames)
+
+# remove one more duplicate 204->203
+hotelNames <- unique(hotelNames)
+
+
+# manually filling in missing location data
+hotelNames$location[hotelNames$hotelID=="712600"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="31212318"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="995050"] <- "Chinatown"
+hotelNames$location[hotelNames$hotelID=="1359681"] <- "Little India"
+hotelNames$location[hotelNames$hotelID=="687572"] <- "Tiong Bahru"
+
+# list of hotel ID for building vector of links 
+hotelIDList <- as.data.frame(hotelNames$hotelID)
+features_df <- read.csv("amenitiesMatrix.csv")
+
 userProfile <- unique(hotelsReviews)  # double checking no duplicates
 userProfile$userId <- NULL
 userProfile$content <- NULL
@@ -1265,7 +1297,7 @@ userPref <- as.data.frame(NULL)
 j <- 1
 for(k in userProfile1$hotelID){
   
-  k <- features_df[features_df$HotelID==userProfile1$hotelID[j],]
+  k <- features_df[features_df$HotelID==userProfile1$hotelId[j],]
   #print(t(k))
   j <- j+1
   userPref <- rbind(userPref,k)

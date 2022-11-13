@@ -290,7 +290,7 @@ userPref <- as.data.frame(NULL)
 j <- 1
 for(k in userProfile1$hotelID){
   
-  k <- features_df[features_df$HotelID==userProfile1$hotelID[j],]
+  k <- features_df[features_df$HotelID==userProfile1$hotelId[j],]
   #print(t(k))
   j <- j+1
   userPref <- rbind(userPref,k)
